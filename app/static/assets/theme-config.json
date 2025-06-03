@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "theme": "modern",
+  "features": [
+    "gradients",
+    "animations",
+    "particles",
+    "responsive",
+    "dark_mode_ready"
+  ],
+  "algorithms": [
+    "tf-idf",
+    "k-means",
+    "random-forest"
+  ]
+}
