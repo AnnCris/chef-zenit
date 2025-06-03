@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Experto de Recomendación Culinaria</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="py-4 text-center">
+            <h1 class="display-4">Chef Virtual Inteligente</h1>
+            <p class="lead">Tu asistente culinario personalizado</p>
+        </header>
+
+        <div class="row mt-4">
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0">¿Qué tienes en tu refrigerador?</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="ingredientesForm">
+                            <div class="mb-3">
+                                <label for="ingredientesInput" class="form-label">Ingresa los ingredientes que tienes disponibles:</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="ingredientesInput" placeholder="Ej: tomate, cebolla, arroz...">
+                                    <button class="btn btn-outline-secondary" type="button" id="agregarIngrediente">Agregar</button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex flex-wrap gap-2" id="ingredientesSeleccionados">
+                                    <!-- Aquí se mostrarán los ingredientes seleccionados como badges -->
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Buscar Recetas</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0">Preferencias y Restricciones</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="preferenciasForm">
+                            <div class="mb-3">
+                                <label class="form-label">Restricciones dietéticas:</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="vegetariano" id="checkVegetariano">
+                                        <label class="form-check-label" for="checkVegetariano">
+                                            Vegetariano
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="vegano" id="checkVegano">
+                                        <label class="form-check-label" for="checkVegano">
+                                            Vegano
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="sin_gluten" id="checkSinGluten">
+                                        <label class="form-check-label" for="checkSinGluten">
+                                            Sin Gluten
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="sin_lactosa" id="checkSinLactosa">
+                                        <label class="form-check-label" for="checkSinLactosa">
+                                            Sin Lactosa
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="alergiasInput" class="form-label">Alergias o ingredientes a evitar:</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="alergiasInput" placeholder="Ej: nueces, mariscos...">
+                                    <button class="btn btn-outline-secondary" type="button" id="agregarAlergia">Agregar</button>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mt-2" id="alergiasSeleccionadas">
+                                    <!-- Aquí se mostrarán las alergias seleccionadas como badges -->
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success">Guardar Preferencias</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h3 class="card-title mb-0">Pregúntale al Chef Virtual</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="consultaForm">
+                            <div class="mb-3">
+                                <label for="consultaInput" class="form-label">Describe lo que buscas o haz una pregunta:</label>
+                                <textarea class="form-control" id="consultaInput" rows="3" placeholder="Ej: Quiero hacer una cena rápida y saludable con pollo y verduras..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-info">Obtener Recomendaciones</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-warning">
+                        <h3 class="card-title mb-0">Resultados</h3>
+                    </div>
+                    <div class="card-body" id="resultadosContainer">
+                        <p class="text-center text-muted">Aquí se mostrarán tus recomendaciones de recetas</p>
+                        <!-- Aquí se mostrarán los resultados de las recomendaciones -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar detalles de receta -->
+    <div class="modal fade" id="recetaModal" tabindex="-1" aria-labelledby="recetaModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="recetaModalLabel">Detalles de la Receta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="recetaModalBody">
+                    <!-- Aquí se mostrarán los detalles de la receta -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="descargarPdfBtn">Descargar PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

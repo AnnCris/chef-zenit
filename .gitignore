@@ -1,0 +1,188 @@
+# Sistema de Recomendación Culinaria - .gitignore
+
+# === ARCHIVOS DE PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# === ENTORNOS VIRTUALES ===
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pyvenv.cfg
+
+# === VARIABLES DE ENTORNO ===
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+config.py.local
+instance/
+
+# === BASE DE DATOS ===
+*.db
+*.sqlite3
+*.sqlite
+app.db
+test.db
+*.sql.backup
+*.dump
+database_backups/
+
+# === MACHINE LEARNING ===
+ml_models/
+*.pkl
+*.joblib
+*.model
+*.h5
+training_data/
+datasets/
+
+# === LOGS Y REPORTES ===
+logs/
+*.log
+*.log.*
+scripts/reports/
+reports/
+system_report_*.json
+system_report_*.txt
+
+# === ARCHIVOS SUBIDOS ===
+app/static/uploads/
+uploads/
+temp/
+tmp/
+user_files/
+*.pdf
+recetas_*.pdf
+generated_pdfs/
+
+# === ARCHIVOS DE SISTEMA ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# === IDEs Y EDITORES ===
+.vscode/
+*.code-workspace
+.idea/
+*.iws
+*.iml
+*.ipr
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+.atom/
+
+# === JUPYTER NOTEBOOKS ===
+.ipynb_checkpoints
+*.ipynb
+
+# === TESTING ===
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage.*
+
+# === DOCUMENTACIÓN ===
+docs/_build/
+site/
+
+# === DEPENDENCIAS ===
+Pipfile.lock
+poetry.lock
+
+# === ARCHIVOS ESPECÍFICOS DEL PROYECTO ===
+app/config_local.py
+local_settings.py
+test_data/
+sample_data/
+pruebas/
+scripts/custom/
+scripts/user_scripts/
+sessions/
+user_sessions/
+
+# === ARCHIVOS DE ANÁLISIS ===
+*.prof
+profile_*.txt
+metrics/
+stats/
+analytics/
+
+# === CONFIGURACIÓN ESPECÍFICA ===
+nginx.conf.local
+apache.conf.local
+docker-compose.override.yml
+.dockerignore.local
+
+# === RESPALDOS ===
+*.backup
+*.bak
+*_backup.*
+
+# === NLTK DATA ===
+nltk_data/
+
+# === ARCHIVOS GRANDES ===
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# === SECRETS Y KEYS ===
+secrets/
+*.pem
+*.key
+*.crt
+client_secrets.json
+
+# === CACHÉ ===
+.cache/
+cache/
+*.cache
+
+# === NODE.JS ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === MONITOREO ===
+monitoring/
+health_checks/

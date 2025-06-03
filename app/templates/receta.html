@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ receta.nombre }} - Chef Virtual Inteligente</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="py-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">← Volver</a>
+                <h1 class="display-5 text-center">{{ receta.nombre }}</h1>
+                <div></div>
+            </div>
+        </header>
+
+        <div class="row mt-4">
+            <div class="col-lg-6">
+                {% if receta.imagen_url %}
+                <div class="mb-4">
+                    <img src="{{ url_for('static', filename=receta.imagen_url) }}" class="img-fluid rounded" alt="{{ receta.nombre }}">
+                </div>
+                {% endif %}
+
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0">Información General</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5>Tiempo de preparación</h5>
+                                <p>{{ receta.tiempo_preparacion }} minutos</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>Porciones</h5>
+                                <p>{{ receta.porciones }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>Dificultad</h5>
+                                <p>{{ receta.dificultad }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>Categoría</h5>
+                                <p>{{ receta.categoria }}</p>
+                            </div>
+                        </div>
+                        {% if receta.descripcion %}
+                        <h5>Descripción:</h5>
+                        <p>{{ receta.descripcion }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0">Valor Nutricional</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5>Calorías</h5>
+                                <p>{{ receta.calorias }} kcal</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>Proteínas</h5>
+                                <p>{{ receta.proteinas }} g</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>Carbohidratos</h5>
+                                <p>{{ receta.carbohidratos }} g</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h5>Grasas</h5>
+                                <p>{{ receta.grasas }} g</p>
+                            </div>
+                        </div>
+                        
+                        {% if receta.valor_nutricional %}
+                        <hr>
+                        <h5>Vitaminas y Minerales</h5>
+                        <div class="row">
+                            {% if receta.valor_nutricional.vitamina_a %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Vitamina A:</span> {{ receta.valor_nutricional.vitamina_a }} μg
+                            </div>
+                            {% endif %}
+                            
+                            {% if receta.valor_nutricional.vitamina_c %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Vitamina C:</span> {{ receta.valor_nutricional.vitamina_c }} mg
+                            </div>
+                            {% endif %}
+                            
+                            {% if receta.valor_nutricional.vitamina_d %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Vitamina D:</span> {{ receta.valor_nutricional.vitamina_d }} μg
+                            </div>
+                            {% endif %}
+                            
+                            {% if receta.valor_nutricional.vitamina_e %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Vitamina E:</span> {{ receta.valor_nutricional.vitamina_e }} mg
+                            </div>
+                            {% endif %}
+                            
+                            {% if receta.valor_nutricional.calcio %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Calcio:</span> {{ receta.valor_nutricional.calcio }} mg
+                            </div>
+                            {% endif %}
+                            
+                            {% if receta.valor_nutricional.hierro %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Hierro:</span> {{ receta.valor_nutricional.hierro }} mg
+                            </div>
+                            {% endif %}
+                            
+                            {% if receta.valor_nutricional.potasio %}
+                            <div class="col-md-6 mb-2">
+                                <span class="fw-bold">Potasio:</span> {{ receta.valor_nutricional.potasio }} mg
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning">
+                        <h3 class="card-title mb-0">Ingredientes</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            {% for ri in receta.ingredientes %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ ri.ingrediente.nombre }}{% if ri.es_opcional %} <small class="text-muted">(opcional)</small>{% endif %}</span>
+                                <span>{{ ri.cantidad }} {{ ri.unidad }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-info">
+                        <h3 class="card-title mb-0">Preparación</h3>
+                    </div>
+                    <div class="card-body">
+                        <ol class="list-group list-group-numbered">
+                            {% for paso in receta.pasos %}
+                            <li class="list-group-item">{{ paso.descripcion }}</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+
+                {% if sustitutos %}
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h3 class="card-title mb-0">Sustitutos de Ingredientes</h3>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ingrediente Original</th>
+                                    <th>Sustituto</th>
+                                    <th>Notas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in sustitutos %}
+                                <tr>
+                                    <td>{{ s.ingrediente_original.nombre }}</td>
+                                    <td>{{ s.ingrediente_sustituto.nombre }}</td>
+                                    <td>{{ s.notas }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('recetas.obtener_receta_pdf', id=receta.id) }}" class="btn btn-primary btn-lg">Descargar Receta en PDF</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
