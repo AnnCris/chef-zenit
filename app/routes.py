@@ -471,37 +471,83 @@ def generate_pdf():
     form = PDFGenerationForm()
     
     if form.validate_on_submit():
-        recipe_ids = [int(id.strip()) for id in form.recipe_ids.data.split(',') if id.strip()]
-        recipes = Recipe.query.filter(Recipe.id.in_(recipe_ids)).all()
-        
-        if not recipes:
-            flash('No se encontraron recetas para generar PDF', 'error')
-            return redirect(url_for('main.dashboard'))
-        
-        # Generar PDF
-        from app.pdf_generator import RecipePDFGenerator
-        pdf_generator = RecipePDFGenerator()
-        
-        pdf_options = {
-            'include_nutritional_info': form.include_nutritional_info.data,
-            'include_substitutions': form.include_substitutions.data,
-            'include_tips': form.include_tips.data
-        }
-        
-        pdf_path = pdf_generator.generate_recipes_pdf(
-            recipes, 
-            current_user.username,
-            pdf_options
-        )
-        
-        if pdf_path and os.path.exists(pdf_path):
-            return send_file(
-                pdf_path,
-                as_attachment=True,
-                download_name=f'recetas_{current_user.username}_{datetime.now().strftime("%Y%m%d")}.pdf'
+        try:
+            recipe_ids = [int(id.strip()) for id in form.recipe_ids.data.split(',') if id.strip()]
+            recipes = Recipe.query.filter(Recipe.id.in_(recipe_ids)).all()
+            
+            if not recipes:
+                flash('No se encontraron recetas para generar PDF', 'error')
+                return redirect(url_for('main.dashboard'))
+            
+            # Generar PDF
+            from app.pdf_generator import RecipePDFGenerator
+            pdf_generator = RecipePDFGenerator()
+            
+            pdf_options = {
+                'include_nutritional_info': form.include_nutritional_info.data,
+                'include_substitutions': form.include_substitutions.data,
+                'include_tips': form.include_tips.data
+            }
+            
+            print(f"🔄 Generando PDF para {len(recipes)} recetas...")
+            pdf_path = pdf_generator.generate_recipes_pdf(
+                recipes, 
+                current_user.username,
+                pdf_options
             )
-        else:
-            flash('Error al generar PDF', 'error')
+            
+            if pdf_path and os.path.exists(pdf_path):
+                print(f"✅ PDF generado exitosamente: {pdf_path}")
+                
+                # Crear nombre para la descarga
+                filename = os.path.basename(pdf_path)
+                
+                try:
+                    # Enviar archivo para descarga directa
+                    response = send_file(
+                        pdf_path,
+                        as_attachment=True,
+                        download_name=filename,
+                        mimetype='application/pdf'
+                    )
+                    
+                    # Programar eliminación del archivo después de la descarga
+                    import threading
+                    import time
+                    
+                    def cleanup_file():
+                        time.sleep(10)  # Esperar 10 segundos antes de limpiar
+                        try:
+                            if os.path.exists(pdf_path):
+                                os.remove(pdf_path)
+                                print(f"🗑️ Archivo temporal eliminado: {pdf_path}")
+                        except Exception as e:
+                            print(f"⚠️ No se pudo eliminar archivo temporal: {e}")
+                    
+                    cleanup_thread = threading.Thread(target=cleanup_file)
+                    cleanup_thread.daemon = True
+                    cleanup_thread.start()
+                    
+                    flash(f'PDF generado exitosamente: {len(recipes)} recetas', 'success')
+                    return response
+                    
+                except Exception as e:
+                    print(f"❌ Error enviando archivo: {e}")
+                    flash('PDF generado pero error al descargar. Revisa tu carpeta Downloads.', 'warning')
+                    
+            else:
+                print(f"❌ Error: PDF no se generó correctamente")
+                flash('Error al generar PDF. Intenta nuevamente.', 'error')
+                
+        except Exception as e:
+            print(f"❌ Error general en generate_pdf: {e}")
+            import traceback
+            traceback.print_exc()
+            flash(f'Error al generar PDF: {str(e)}', 'error')
+    
+    else:
+        print(f"❌ Formulario no válido: {form.errors}")
+        flash('Datos del formulario inválidos', 'error')
     
     return redirect(url_for('main.dashboard'))
 

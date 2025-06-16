@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+
+{% block title %}Asistente de Cocina - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                <div class="card-body text-center py-5">
+                    <h1 class="display-5 fw-bold mb-3">
+                        <i class="fas fa-robot me-3"></i>
+                        Asistente de Cocina Inteligente
+                    </h1>
+                    <p class="lead mb-0">
+                        Tu chef personal con inteligencia artificial está aquí para ayudarte
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Chat Principal -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="avatar bg-white text-success rounded-circle d-flex align-items-center justify-content-center" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h5 class="mb-0">Chef AI Assistant</h5>
+                            <small class="opacity-75">
+                                <span class="status-indicator"></span> En línea
+                            </small>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button class="btn btn-outline-light btn-sm" onclick="clearChat()">
+                                <i class="fas fa-broom"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Área de chat -->
+                <div class="card-body d-flex flex-column" style="height: 500px;">
+                    <div id="chat-messages" class="flex-grow-1 overflow-auto mb-3">
+                        <!-- Mensaje de bienvenida -->
+                        <div class="message bot-message">
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center" 
+                                         style="width: 35px; height: 35px;">
+                                        <i class="fas fa-robot"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="bg-light rounded p-3">
+                                        <p class="mb-2">¡Hola! Soy tu asistente culinario inteligente. 🍳</p>
+                                        <p class="mb-0">Puedo ayudarte con:</p>
+                                        <ul class="mb-0 mt-2">
+                                            <li>Sugerencias de recetas</li>
+                                            <li>Consejos de cocina</li>
+                                            <li>Información nutricional</li>
+                                            <li>Sustitutos de ingredientes</li>
+                                            <li>Técnicas culinarias</li>
+                                        </ul>
+                                    </div>
+                                    <small class="text-muted">Hace un momento</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Input de mensaje -->
+                    <div class="input-group">
+                        <input type="text" 
+                               id="message-input" 
+                               class="form-control" 
+                               placeholder="Escribe tu pregunta culinaria aquí..."
+                               onkeypress="handleKeyPress(event)">
+                        <button class="btn btn-success" onclick="sendMessage()" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar con sugerencias -->
+        <div class="col-lg-4">
+            <!-- Sugerencias rápidas -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        Preguntas Frecuentes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-sm text-start" 
+                                onclick="quickQuestion('¿Qué puedo cocinar con pollo y arroz?')">
+                            🍗 ¿Qué puedo cocinar con pollo y arroz?
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm text-start" 
+                                onclick="quickQuestion('¿Cómo sustituir huevos en una receta vegana?')">
+                            🥚 ¿Cómo sustituir huevos en recetas veganas?
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm text-start" 
+                                onclick="quickQuestion('¿Cuánto tiempo cocinar pasta al dente?')">
+                            🍝 ¿Cuánto tiempo cocinar pasta al dente?
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm text-start" 
+                                onclick="quickQuestion('¿Cómo hacer que mi comida sea más saludable?')">
+                            🥗 ¿Cómo hacer comida más saludable?
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm text-start" 
+                                onclick="quickQuestion('¿Qué especias van bien con el pollo?')">
+                            🌶️ ¿Qué especias van bien con el pollo?
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Consejos del día -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-day text-info me-2"></i>
+                        Consejo del Día
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <i class="fas fa-thermometer-half fa-2x text-warning mb-3"></i>
+                        <h6>Temperatura Perfecta</h6>
+                        <p class="small text-muted mb-0">
+                            Para obtener el mejor sabor en carnes, usa un termómetro: 
+                            pollo 75°C, carne de res 60°C para término medio.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recetas sugeridas -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        Recetas Populares
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Pasta Carbonara</h6>
+                                    <small class="text-muted">⭐ 4.8 • 25 min</small>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" 
+                                        onclick="quickQuestion('¿Cómo hacer pasta carbonara perfecta?')">
+                                    Preguntar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Pollo al Curry</h6>
+                                    <small class="text-muted">⭐ 4.6 • 35 min</small>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" 
+                                        onclick="quickQuestion('¿Cuáles son los secretos del curry?')">
+                                    Preguntar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="list-group-item border-0 px-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">Ensalada César</h6>
+                                    <small class="text-muted">⭐ 4.5 • 15 min</small>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" 
+                                        onclick="quickQuestion('¿Cómo hacer aderezo césar casero?')">
+                                    Preguntar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estado del asistente -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Sobre el Asistente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col-6">
+                            <div class="bg-light rounded p-2">
+                                <i class="fas fa-brain fa-lg text-primary"></i>
+                                <div class="mt-1">
+                                    <small class="fw-bold">IA Avanzada</small>
+                                    <div class="small text-muted">Procesamiento NLP</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light rounded p-2">
+                                <i class="fas fa-database fa-lg text-success"></i>
+                                <div class="mt-1">
+                                    <small class="fw-bold">1000+ Recetas</small>
+                                    <div class="small text-muted">Base de datos</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light rounded p-2">
+                                <i class="fas fa-clock fa-lg text-warning"></i>
+                                <div class="mt-1">
+                                    <small class="fw-bold">24/7</small>
+                                    <div class="small text-muted">Disponible</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light rounded p-2">
+                                <i class="fas fa-language fa-lg text-info"></i>
+                                <div class="mt-1">
+                                    <small class="fw-bold">Español</small>
+                                    <div class="small text-muted">Nativo</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info py-2 mb-0" role="alert">
+                        <small>
+                            <i class="fas fa-magic me-1"></i>
+                            <strong>Tip:</strong> Puedes preguntarme sobre técnicas culinarias, 
+                            sustitutos de ingredientes, tiempos de cocción y mucho más.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let messageCount = 0;
+    
+    // Enviar mensaje
+    function sendMessage() {
+        const input = document.getElementById('message-input');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Agregar mensaje del usuario
+        addMessage('user', message);
+        
+        // Limpiar input y deshabilitar botón
+        input.value = '';
+        setLoading(true);
+        
+        // Simular respuesta del bot (en producción sería una llamada AJAX)
+        setTimeout(() => {
+            const response = generateResponse(message);
+            addMessage('bot', response);
+            setLoading(false);
+        }, 1000 + Math.random() * 2000);
+    }
+    
+    // Agregar mensaje al chat
+    function addMessage(sender, content) {
+        const chatMessages = document.getElementById('chat-messages');
+        const isBot = sender === 'bot';
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isBot ? 'bot-message' : 'user-message'}`;
+        
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        if (isBot) {
+            messageDiv.innerHTML = `
+                <div class="d-flex mb-3">
+                    <div class="flex-shrink-0">
+                        <div class="avatar bg-success text-white rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 35px; height: 35px;">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <div class="bg-light rounded p-3">
+                            ${content}
+                        </div>
+                        <small class="text-muted">${time}</small>
+                    </div>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="d-flex mb-3 justify-content-end">
+                    <div class="flex-grow-1 me-3 text-end">
+                        <div class="bg-primary text-white rounded p-3">
+                            ${content}
+                        </div>
+                        <small class="text-muted">${time}</small>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 35px; height: 35px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        messageCount++;
+    }
+    
+    // Generar respuesta simulada del bot
+    function generateResponse(message) {
+        const msg = message.toLowerCase();
+        
+        // Respuestas predefinidas basadas en palabras clave
+        if (msg.includes('pollo') && msg.includes('arroz')) {
+            return `🍗 ¡Excelente combinación! Te sugiero:<br><br>
+                    <strong>Arroz con Pollo Clásico:</strong><br>
+                    • Sofríe el pollo con ajo y cebolla<br>
+                    • Agrega arroz y caldo de pollo<br>
+                    • Cocina 18-20 minutos a fuego medio<br>
+                    • Añade verduras para más color y nutrición<br><br>
+                    💡 <em>Tip:</em> Usa azafrán para dar color dorado y sabor especial.`;
+        }
+        
+        if (msg.includes('huevo') && (msg.includes('vegano') || msg.includes('sustituir'))) {
+            return `🥚➡️🌱 Sustitutos veganos para huevos:<br><br>
+                    <strong>Para hornear:</strong><br>
+                    • 1 tbsp linaza molida + 3 tbsp agua (reposar 5 min)<br>
+                    • 1/4 taza aquafaba (líquido de garbanzos)<br>
+                    • 1/4 taza puré de manzana<br><br>
+                    <strong>Para ligar:</strong><br>
+                    • Harina de garbanzo + agua<br>
+                    • Tofu suave desmenuzado<br><br>
+                    ✨ <em>Cada sustituto tiene propiedades diferentes!</em>`;
+        }
+        
+        if (msg.includes('pasta') && msg.includes('dente')) {
+            return `🍝 Pasta al dente perfecta:<br><br>
+                    <strong>Regla general:</strong> Tiempo del paquete - 1 minuto<br><br>
+                    <strong>Pasos:</strong><br>
+                    1. Agua hirviendo con sal abundante<br>
+                    2. Agregar pasta cuando burbujee fuerte<br>
+                    3. Revolver ocasionalmente<br>
+                    4. Probar 1-2 min antes del tiempo indicado<br>
+                    5. Debe quedar firme al morder<br><br>
+                    🧂 <em>Tip:</em> El agua debe saber a "mar" de sal.`;
+        }
+        
+        if (msg.includes('saludable') || msg.includes('salud')) {
+            return `🥗 Consejos para cocina saludable:<br><br>
+                    <strong>Técnicas:</strong><br>
+                    • Cocinar al vapor, hornear o plancha<br>
+                    • Reducir sal, usar especias y hierbas<br>
+                    • Incluir verduras de colores variados<br><br>
+                    <strong>Ingredientes:</strong><br>
+                    • Granos integrales en lugar de refinados<br>
+                    • Proteínas magras (pescado, pollo sin piel)<br>
+                    • Grasas buenas (aceite oliva, aguacate)<br><br>
+                    💚 <em>Recuerda:</em> Balance y variedad son clave.`;
+        }
+        
+        if (msg.includes('especias') && msg.includes('pollo')) {
+            return `🌶️ Especias perfectas para pollo:<br><br>
+                    <strong>Clásicas:</strong><br>
+                    • Pimentón, orégano, tomillo<br>
+                    • Ajo en polvo, cebolla en polvo<br><br>
+                    <strong>Internacionales:</strong><br>
+                    • Curry (india) • Cinco especias (china)<br>
+                    • Hierbas de Provenza (francesa)<br>
+                    • Cajún (estadounidense)<br><br>
+                    <strong>Marinad básico:</strong><br>
+                    Aceite + limón + ajo + especias elegidas<br><br>
+                    ⏰ <em>Marina al menos 30 minutos.</em>`;
+        }
+        
+        if (msg.includes('carbonara')) {
+            return `🍝 Carbonara auténtica italiana:<br><br>
+                    <strong>Ingredientes (4 personas):</strong><br>
+                    • 400g espagueti • 4 huevos (solo yemas)<br>
+                    • 150g panceta • 100g queso Pecorino Romano<br>
+                    • Pimienta negra recién molida<br><br>
+                    <strong>Secreto:</strong><br>
+                    ❌ NO lleva nata ni ajo<br>
+                    ✅ El cremoso viene de los huevos y queso<br>
+                    🔥 Mezclar fuera del fuego para no cuajar<br><br>
+                    🇮🇹 <em>¡Receta tradicional romana!</em>`;
+        }
+        
+        if (msg.includes('curry')) {
+            return `🍛 Secretos del curry perfecto:<br><br>
+                    <strong>Base aromática:</strong><br>
+                    • Sofreír cebolla hasta dorar<br>
+                    • Agregar ajo y jengibre<br>
+                    • Tostar especias 30 segundos<br><br>
+                    <strong>Especias clave:</strong><br>
+                    • Cúrcuma, comino, cilantro molido<br>
+                    • Garam masala, chile en polvo<br><br>
+                    <strong>Tips:</strong><br>
+                    🥥 Leche de coco al final<br>
+                    🍅 Tomate para acidez<br>
+                    ⏰ Cocción lenta = más sabor<br><br>
+                    🌶️ <em>Ajusta picante al gusto.</em>`;
+        }
+        
+        if (msg.includes('aderezo') && msg.includes('césar')) {
+            return `🥗 Aderezo César casero:<br><br>
+                    <strong>Ingredientes:</strong><br>
+                    • 2 yemas de huevo • 2 dientes ajo<br>
+                    • 4 anchoas • Jugo 1 limón<br>
+                    • 1/2 taza aceite oliva • Queso parmesano<br><br>
+                    <strong>Preparación:</strong><br>
+                    1. Machacar ajo y anchoas<br>
+                    2. Batir yemas con limón<br>
+                    3. Agregar aceite lentamente<br>
+                    4. Incorporar queso y sazonar<br><br>
+                    🧄 <em>El ajo crudo le da el toque auténtico.</em>`;
+        }
+        
+        // Respuesta genérica si no hay coincidencias
+        const genericResponses = [
+            `🤔 Interesante pregunta sobre cocina. Te recomiendo ser más específico para darte una respuesta detallada. <br><br>¿Podrías contarme más detalles? Por ejemplo:<br>• ¿Qué ingredientes tienes?<br>• ¿Qué tipo de cocina prefieres?<br>• ¿Tienes alguna restricción dietética?`,
+            
+            `👨‍🍳 Como chef virtual, necesito más información para ayudarte mejor. <br><br>Puedo asistirte con:<br>• Recetas específicas<br>• Técnicas de cocina<br>• Sustitutos de ingredientes<br>• Información nutricional<br><br>¿Sobre cuál te gustaría saber?`,
+            
+            `🍳 ¡Me encanta hablar de cocina! Para darte la mejor respuesta, comparte conmigo:<br><br>• ¿Es sobre una receta específica?<br>• ¿Necesitas consejos de técnica?<br>• ¿Buscas opciones saludables?<br>• ¿Tienes ingredientes específicos?<br><br>¡Estoy aquí para ayudarte!`
+        ];
+        
+        return genericResponses[Math.floor(Math.random() * genericResponses.length)];
+    }
+    
+    // Manejar Enter en el input
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    }
+    
+    // Pregunta rápida
+    function quickQuestion(question) {
+        document.getElementById('message-input').value = question;
+        sendMessage();
+    }
+    
+    // Limpiar chat
+    function clearChat() {
+        const chatMessages = document.getElementById('chat-messages');
+        // Mantener solo el mensaje de bienvenida
+        const welcomeMessage = chatMessages.firstElementChild;
+        chatMessages.innerHTML = '';
+        chatMessages.appendChild(welcomeMessage);
+        messageCount = 0;
+    }
+    
+    // Estado de carga
+    function setLoading(loading) {
+        const sendBtn = document.getElementById('send-btn');
+        const input = document.getElementById('message-input');
+        
+        if (loading) {
+            sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            sendBtn.disabled = true;
+            input.disabled = true;
+        } else {
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            sendBtn.disabled = false;
+            input.disabled = false;
+            input.focus();
+        }
+    }
+    
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('message-input').focus();
+    });
+</script>
+{% endblock %}

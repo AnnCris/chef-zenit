@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Búsqueda Avanzada - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center py-5">
+                    <h1 class="display-5 fw-bold mb-3">
+                        <i class="fas fa-search me-3"></i>
+                        Búsqueda Avanzada
+                    </h1>
+                    <p class="lead mb-0">
+                        Encuentra la receta perfecta con filtros personalizados
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Formulario de búsqueda -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtros de Búsqueda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="searchForm">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Ingredientes -->
+                        <div class="mb-4">
+                            {{ form.ingredients.label(class="form-label fw-bold") }}
+                            {{ form.ingredients(class="form-control", id="ingredients-search", placeholder="pollo, arroz, tomate...") }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle"></i>
+                                Separa los ingredientes con comas
+                            </div>
+                        </div>
+                        
+                        <!-- Tipo de cocina -->
+                        <div class="mb-4">
+                            {{ form.cuisine_type.label(class="form-label fw-bold") }}
+                            {{ form.cuisine_type(class="form-select") }}
+                        </div>
+                        
+                        <!-- Tiempo máximo -->
+                        <div class="mb-4">
+                            {{ form.max_time.label(class="form-label fw-bold") }}
+                            {{ form.max_time(class="form-select") }}
+                        </div>
+                        
+                        <!-- Dificultad -->
+                        <div class="mb-4">
+                            {{ form.difficulty.label(class="form-label fw-bold") }}
+                            {{ form.difficulty(class="form-select") }}
+                        </div>
+                        
+                        <!-- Calificación mínima -->
+                        <div class="mb-4">
+                            {{ form.min_rating.label(class="form-label fw-bold") }}
+                            {{ form.min_rating(class="form-select") }}
+                        </div>
+                        
+                        <!-- Botones -->
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                            <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                                <i class="fas fa-eraser"></i> Limpiar Filtros
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resultados -->
+        <div class="col-lg-8">
+            {% if results %}
+            <!-- Header de resultados -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4>
+                    <i class="fas fa-list-ul me-2"></i>
+                    Resultados de Búsqueda ({{ results|length }})
+                </h4>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-sort"></i> Ordenar por
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('rating')">Calificación</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('time')">Tiempo</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('difficulty')">Dificultad</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="sortResults('name')">Nombre</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Lista de resultados -->
+            <div id="results-container">
+                {% for recipe in results %}
+                <div class="card recipe-result mb-3" 
+                     data-rating="{{ recipe.average_rating or 0 }}"
+                     data-time="{{ recipe.total_time or 0 }}"
+                     data-difficulty="{{ recipe.difficulty or 'fácil' }}"
+                     data-name="{{ recipe.name }}">
+                    <div class="row g-0">
+                        <!-- Imagen -->
+                        <div class="col-md-3">
+                            {% if recipe.image_path %}
+                            <img src="{{ recipe.image_path }}" 
+                                 class="img-fluid h-100 w-100" 
+                                 style="object-fit: cover; min-height: 150px;">
+                            {% else %}
+                            <div class="bg-light h-100 d-flex align-items-center justify-content-center" 
+                                 style="min-height: 150px;">
+                                <i class="fas fa-utensils fa-2x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Contenido -->
+                        <div class="col-md-9">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title mb-0">
+                                        <a href="{{ url_for('main.recipe_detail', recipe_id=recipe.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ recipe.name }}
+                                        </a>
+                                    </h5>
+                                    <button onclick="addToPDF({{ recipe.id }})" 
+                                            class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                
+                                {% if recipe.description %}
+                                <p class="card-text text-muted mb-2">
+                                    {{ recipe.description[:100] }}{% if recipe.description|length > 100 %}...{% endif %}
+                                </p>
+                                {% endif %}
+                                
+                                <!-- Metadatos -->
+                                <div class="d-flex flex-wrap gap-3 mb-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ recipe.total_time or 'N/A' }} min
+                                    </small>
+                                    <small class="difficulty-{{ recipe.difficulty or 'fácil' }}">
+                                        <i class="fas fa-signal"></i> {{ recipe.difficulty|title or 'Fácil' }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-users"></i> {{ recipe.servings or 4 }} porciones
+                                    </small>
+                                    {% if recipe.cuisine_type %}
+                                    <span class="badge bg-secondary">{{ recipe.cuisine_type|title }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Rating -->
+                                {% if recipe.average_rating > 0 %}
+                                <div class="rating-stars mb-2">
+                                    {% for i in range(recipe.average_rating|int) %}
+                                        <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - recipe.average_rating|int) %}
+                                        <i class="far fa-star"></i>
+                                    {% endfor %}
+                                    <small class="ms-2">({{ "%.1f"|format(recipe.average_rating) }})</small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Ingredientes principales -->
+                                {% if recipe.ingredients %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>Ingredientes:</strong> 
+                                        {% for ingredient in recipe.ingredients[:4] %}
+                                            {{ ingredient.name }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                        {% if recipe.ingredients|length > 4 %}
+                                            y {{ recipe.ingredients|length - 4 }} más...
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Botón de acción -->
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('main.recipe_detail', recipe_id=recipe.id) }}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> Ver Receta
+                                    </a>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-plus"></i> 
+                                        {{ recipe.created_at.strftime('%d/%m/%Y') if recipe.created_at else 'Fecha N/A' }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Paginación (placeholder) -->
+            {% if results|length >= 20 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <span class="page-link">Anterior</span>
+                    </li>
+                    <li class="page-item active">
+                        <span class="page-link">1</span>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">2</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Siguiente</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <!-- Sin resultados -->
+            <div class="text-center py-5">
+                {% if request.method == 'POST' %}
+                <!-- Búsqueda sin resultados -->
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">No se encontraron recetas</h3>
+                <p class="text-muted">
+                    Intenta ajustar los filtros de búsqueda o usar términos más generales.
+                </p>
+                <button onclick="clearFilters()" class="btn btn-primary">
+                    <i class="fas fa-eraser"></i> Limpiar Filtros
+                </button>
+                {% else %}
+                <!-- Página inicial -->
+                <i class="fas fa-utensils fa-3x text-primary mb-3"></i>
+                <h3>Busca la Receta Perfecta</h3>
+                <p class="text-muted">
+                    Usa los filtros de la izquierda para encontrar exactamente lo que buscas.
+                </p>
+                <div class="row mt-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-list-ul fa-2x text-primary mb-2"></i>
+                                <h6>Por Ingredientes</h6>
+                                <small class="text-muted">Encuentra recetas con lo que tienes</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                <h6>Por Tiempo</h6>
+                                <small class="text-muted">Filtra por tiempo de preparación</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-star fa-2x text-success mb-2"></i>
+                                <h6>Por Calificación</h6>
+                                <small class="text-muted">Solo las mejores recetas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configurar autocompletado para ingredientes
+    document.addEventListener('DOMContentLoaded', function() {
+        setupIngredientAutocomplete('ingredients-search');
+    });
+    
+    // Limpiar filtros
+    function clearFilters() {
+        document.getElementById('searchForm').reset();
+        // Recargar página sin parámetros
+        window.location.href = window.location.pathname;
+    }
+    
+    // Ordenar resultados
+    function sortResults(criteria) {
+        const container = document.getElementById('results-container');
+        const results = Array.from(container.children);
+        
+        results.sort((a, b) => {
+            let aVal, bVal;
+            
+            switch(criteria) {
+                case 'rating':
+                    aVal = parseFloat(a.dataset.rating);
+                    bVal = parseFloat(b.dataset.rating);
+                    return bVal - aVal; // Descendente
+                    
+                case 'time':
+                    aVal = parseInt(a.dataset.time);
+                    bVal = parseInt(b.dataset.time);
+                    return aVal - bVal; // Ascendente
+                    
+                case 'difficulty':
+                    const diffOrder = {'fácil': 1, 'medio': 2, 'difícil': 3};
+                    aVal = diffOrder[a.dataset.difficulty] || 1;
+                    bVal = diffOrder[b.dataset.difficulty] || 1;
+                    return aVal - bVal; // Ascendente
+                    
+                case 'name':
+                    aVal = a.dataset.name.toLowerCase();
+                    bVal = b.dataset.name.toLowerCase();
+                    return aVal.localeCompare(bVal); // Alfabético
+                    
+                default:
+                    return 0;
+            }
+        });
+        
+        // Reorganizar elementos
+        results.forEach(result => container.appendChild(result));
+        
+        // Mostrar feedback visual
+        container.style.opacity = '0.5';
+        setTimeout(() => {
+            container.style.opacity = '1';
+        }, 200);
+    }
+    
+    // Agregar a PDF
+    function addToPDF(recipeId) {
+        let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
+        if (!pdfList.includes(recipeId)) {
+            pdfList.push(recipeId);
+            localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
+            if (typeof updatePDFCounter === 'function') {
+                updatePDFCounter();
+            }
+            showToast('Receta agregada a tu lista de PDF');
+        } else {
+            showToast('Esta receta ya está en tu lista de PDF', 'warning');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Preferencias - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Configurar Preferencias
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Personaliza tu experiencia culinaria</p>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Restricciones Dietéticas -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-apple-alt text-success me-2"></i>
+                                Restricciones Dietéticas
+                            </h5>
+                            <div class="row">
+                                {% for subfield in form.dietary_restrictions %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        {{ subfield(class="form-check-input") }}
+                                        {{ subfield.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.dietary_restrictions.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.dietary_restrictions.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Preferencias de Tiempo -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                    Tiempo de Preparación
+                                </h6>
+                                {{ form.max_prep_time.label(class="form-label") }}
+                                {{ form.max_prep_time(class="form-select") }}
+                                {% if form.max_prep_time.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.max_prep_time.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6 class="mb-3">
+                                    <i class="fas fa-signal text-info me-2"></i>
+                                    Dificultad Preferida
+                                </h6>
+                                {{ form.difficulty_preference.label(class="form-label") }}
+                                {{ form.difficulty_preference(class="form-select") }}
+                                {% if form.difficulty_preference.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.difficulty_preference.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Tipos de Cocina Preferidos -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-globe text-primary me-2"></i>
+                                Tipos de Cocina Preferidos
+                            </h5>
+                            <div class="row">
+                                {% for subfield in form.preferred_cuisines %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ subfield(class="form-check-input") }}
+                                        {{ subfield.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if form.preferred_cuisines.errors %}
+                                <div class="text-danger mt-2">
+                                    {% for error in form.preferred_cuisines.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Ingredientes que no gustan -->
+                        <div class="mb-4">
+                            <h5 class="mb-3">
+                                <i class="fas fa-times-circle text-danger me-2"></i>
+                                Ingredientes que Prefieres Evitar
+                            </h5>
+                            {{ form.disliked_ingredients.label(class="form-label") }}
+                            {{ form.disliked_ingredients(class="form-control", rows="3") }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle"></i>
+                                Separa los ingredientes con comas. Ejemplo: cebolla, ajo, chile picante
+                            </div>
+                            {% if form.disliked_ingredients.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.disliked_ingredients.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Botones de acción -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                            </a>
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Información adicional -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        ¿Cómo funcionan las preferencias?
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>🧠 Inteligencia Artificial</h6>
+                            <p class="small text-muted mb-3">
+                                El sistema aprende de tus preferencias para mejorar las recomendaciones con cada búsqueda.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>🔍 Filtrado Automático</h6>
+                            <p class="small text-muted mb-3">
+                                Las recetas se filtran automáticamente según tus restricciones dietéticas y preferencias.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>📊 Análisis Nutricional</h6>
+                            <p class="small text-muted mb-3">
+                                Recibe recomendaciones nutricionales personalizadas basadas en tus necesidades.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>🔄 Actualización Continua</h6>
+                            <p class="small text-muted mb-3">
+                                Puedes cambiar tus preferencias en cualquier momento para mejorar tu experiencia.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Configurar autocompletado para ingredientes no deseados
+    document.addEventListener('DOMContentLoaded', function() {
+        setupIngredientAutocomplete('disliked_ingredients');
+    });
+</script>
+{% endblock %}

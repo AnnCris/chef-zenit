@@ -7,6 +7,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from datetime import datetime
 import os
 import re
+import tempfile
 
 class RecipePDFGenerator:
     def __init__(self):
@@ -75,7 +76,7 @@ class RecipePDFGenerator:
     
     def generate_recipes_pdf(self, recipes, username, options=None):
         """
-        Genera un PDF con las recetas seleccionadas
+        Genera un PDF con las recetas seleccionadas y lo guarda en Downloads
         """
         if options is None:
             options = {
@@ -84,50 +85,73 @@ class RecipePDFGenerator:
                 'include_tips': True
             }
         
-        # Crear directorio si no existe
-        pdf_dir = 'static/pdfs'
-        os.makedirs(pdf_dir, exist_ok=True)
-        
-        # Nombre del archivo
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"recetas_{username}_{timestamp}.pdf"
-        filepath = os.path.join(pdf_dir, filename)
-        
-        # Crear documento PDF
-        doc = SimpleDocTemplate(
-            filepath,
-            pagesize=A4,
-            rightMargin=inch,
-            leftMargin=inch,
-            topMargin=inch,
-            bottomMargin=inch
-        )
-        
-        # Contenido del PDF
-        story = []
-        
-        # Portada
-        self._add_cover_page(story, username, len(recipes))
-        
-        # Índice
-        self._add_table_of_contents(story, recipes)
-        
-        # Recetas
-        for i, recipe in enumerate(recipes):
-            self._add_recipe_page(story, recipe, options)
-            if i < len(recipes) - 1:  # No agregar salto de página en la última receta
-                story.append(PageBreak())
-        
-        # Información nutricional resumida
-        if options.get('include_nutritional_info', True):
-            self._add_nutritional_summary(story, recipes)
-        
-        # Generar PDF
         try:
+            # Usar la carpeta Downloads del usuario
+            downloads_folder = os.path.join(os.path.expanduser("~"), "Downloads")
+            
+            # Si no existe Downloads, usar un directorio temporal
+            if not os.path.exists(downloads_folder):
+                downloads_folder = tempfile.gettempdir()
+                print(f"⚠️ Downloads no encontrado, usando: {downloads_folder}")
+            
+            # Limpiar nombre de usuario para el archivo
+            safe_username = re.sub(r'[^\w\-_.]', '_', username)
+            
+            # Nombre del archivo con timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"recetas_{safe_username}_{timestamp}.pdf"
+            
+            # Ruta completa del archivo (usar solo barras normales)
+            filepath = os.path.join(downloads_folder, filename).replace('\\', '/')
+            
+            print(f"📁 Generando PDF en: {filepath}")
+            
+            # Crear documento PDF
+            doc = SimpleDocTemplate(
+                filepath,
+                pagesize=A4,
+                rightMargin=inch,
+                leftMargin=inch,
+                topMargin=inch,
+                bottomMargin=inch
+            )
+            
+            # Contenido del PDF
+            story = []
+            
+            # Portada
+            self._add_cover_page(story, username, len(recipes))
+            
+            # Índice
+            self._add_table_of_contents(story, recipes)
+            
+            # Recetas
+            for i, recipe in enumerate(recipes):
+                self._add_recipe_page(story, recipe, options)
+                if i < len(recipes) - 1:  # No agregar salto de página en la última receta
+                    story.append(PageBreak())
+            
+            # Información nutricional resumida
+            if options.get('include_nutritional_info', True):
+                self._add_nutritional_summary(story, recipes)
+            
+            # Generar PDF
+            print("🔄 Construyendo PDF...")
             doc.build(story)
-            return filepath
+            
+            # Verificar que el archivo se creó correctamente
+            if os.path.exists(filepath):
+                file_size = os.path.getsize(filepath) / 1024  # Tamaño en KB
+                print(f"✅ PDF generado exitosamente: {filename} ({file_size:.1f} KB)")
+                return filepath
+            else:
+                print(f"❌ Error: El archivo no se creó en {filepath}")
+                return None
+                
         except Exception as e:
-            print(f"Error generando PDF: {e}")
+            print(f"❌ Error generando PDF: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _add_cover_page(self, story, username, recipe_count):
