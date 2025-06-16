@@ -6,7 +6,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 import pickle
 import os
-from app.models import Recipe, User, RecipeRating, Ingredient, NutritionalInfo
 
 class RecommendationEngine:
     def __init__(self):
@@ -14,82 +13,171 @@ class RecommendationEngine:
         self.rating_predictor = RandomForestRegressor(n_estimators=100, random_state=42)
         self.scaler = StandardScaler()
         self.model_path = 'ml_models/trained_models/'
+        self.is_trained = False
         
         # Cargar modelos entrenados si existen
         self.load_models()
     
-    def train_models(self):
+    def train_models(self, recipes_data=None, ratings_data=None):
         """Entrena los modelos de machine learning"""
-        print("Entrenando modelos de recomendación...")
+        print("🧠 Entrenando modelos de recomendación...")
+        
+        # Usar datos de ejemplo si no se proporcionan
+        if recipes_data is None:
+            recipes_data = self._generate_sample_recipes()
+        if ratings_data is None:
+            ratings_data = self._generate_sample_ratings()
         
         # Preparar datos para entrenamiento
-        recipe_features, ratings_data = self._prepare_training_data()
+        recipe_features, ratings_df = self._prepare_training_data(recipes_data, ratings_data)
         
-        if len(ratings_data) > 0:
+        if len(ratings_df) > 0:
             # Entrenar modelo de predicción de ratings
-            self._train_rating_predictor(recipe_features, ratings_data)
+            self._train_rating_predictor(recipe_features, ratings_df)
         
         # Entrenar filtro basado en contenido
-        self.content_filter.train()
+        self.content_filter.train(recipes_data)
         
         # Guardar modelos
         self.save_models()
-        print("Modelos entrenados y guardados exitosamente.")
+        self.is_trained = True
+        print("✅ Modelos entrenados y guardados exitosamente.")
     
-    def _prepare_training_data(self):
+    def _generate_sample_recipes(self):
+        """Genera datos de ejemplo de recetas"""
+        return [
+            {
+                'id': 1,
+                'name': 'Arroz con Pollo',
+                'description': 'Plato tradicional latino con arroz, pollo y verduras',
+                'ingredients': ['arroz', 'pollo', 'cebolla', 'ajo', 'pimiento', 'tomate'],
+                'cuisine_type': 'latina',
+                'difficulty': 'medio',
+                'prep_time': 15,
+                'cook_time': 25,
+                'servings': 4,
+                'nutritional_info': {
+                    'calories_per_serving': 450,
+                    'protein': 25,
+                    'carbs': 55,
+                    'fat': 12,
+                    'fiber': 3,
+                    'sugar': 6,
+                    'sodium': 800
+                },
+                'avg_rating': 4.5
+            },
+            {
+                'id': 2,
+                'name': 'Ensalada César',
+                'description': 'Ensalada fresca con lechuga y aderezo césar',
+                'ingredients': ['lechuga', 'queso', 'ajo', 'limón', 'pan'],
+                'cuisine_type': 'italiana',
+                'difficulty': 'fácil',
+                'prep_time': 10,
+                'cook_time': 5,
+                'servings': 2,
+                'nutritional_info': {
+                    'calories_per_serving': 280,
+                    'protein': 8,
+                    'carbs': 15,
+                    'fat': 22,
+                    'fiber': 4,
+                    'sugar': 3,
+                    'sodium': 650
+                },
+                'avg_rating': 4.3
+            },
+            {
+                'id': 3,
+                'name': 'Sopa de Lentejas',
+                'description': 'Sopa nutritiva con lentejas y verduras',
+                'ingredients': ['lenteja', 'cebolla', 'ajo', 'zanahoria', 'apio'],
+                'cuisine_type': 'mediterránea',
+                'difficulty': 'fácil',
+                'prep_time': 10,
+                'cook_time': 35,
+                'servings': 4,
+                'nutritional_info': {
+                    'calories_per_serving': 320,
+                    'protein': 18,
+                    'carbs': 45,
+                    'fat': 8,
+                    'fiber': 12,
+                    'sugar': 8,
+                    'sodium': 400
+                },
+                'avg_rating': 4.7
+            }
+        ]
+    
+    def _generate_sample_ratings(self):
+        """Genera datos de ejemplo de ratings"""
+        return [
+            {'user_id': 1, 'recipe_id': 1, 'rating': 5, 'user_profile': {'dietary_restrictions': [], 'avg_rating_given': 4.2}},
+            {'user_id': 1, 'recipe_id': 2, 'rating': 4, 'user_profile': {'dietary_restrictions': [], 'avg_rating_given': 4.2}},
+            {'user_id': 2, 'recipe_id': 1, 'rating': 4, 'user_profile': {'dietary_restrictions': ['vegetariano'], 'avg_rating_given': 3.8}},
+            {'user_id': 2, 'recipe_id': 3, 'rating': 5, 'user_profile': {'dietary_restrictions': ['vegetariano'], 'avg_rating_given': 3.8}},
+            {'user_id': 3, 'recipe_id': 2, 'rating': 5, 'user_profile': {'dietary_restrictions': [], 'avg_rating_given': 4.5}},
+            {'user_id': 3, 'recipe_id': 3, 'rating': 5, 'user_profile': {'dietary_restrictions': [], 'avg_rating_given': 4.5}}
+        ]
+    
+    def _prepare_training_data(self, recipes_data, ratings_data):
         """Prepara los datos para entrenamiento"""
-        recipes = Recipe.query.all()
-        ratings = RecipeRating.query.all()
-        
         # Crear características de recetas
         recipe_features = []
-        for recipe in recipes:
+        for recipe in recipes_data:
             features = self._extract_recipe_features(recipe)
             recipe_features.append(features)
         
         recipe_df = pd.DataFrame(recipe_features)
         
         # Crear dataset de ratings
-        ratings_data = []
-        for rating in ratings:
-            recipe_features = self._extract_recipe_features(rating.recipe)
-            user_features = self._extract_user_features(rating.user)
-            
-            combined_features = {**recipe_features, **user_features}
-            combined_features['rating'] = rating.rating
-            ratings_data.append(combined_features)
+        ratings_list = []
+        for rating in ratings_data:
+            # Encontrar la receta correspondiente
+            recipe = next((r for r in recipes_data if r['id'] == rating['recipe_id']), None)
+            if recipe:
+                recipe_features = self._extract_recipe_features(recipe)
+                user_features = self._extract_user_features(rating['user_profile'])
+                
+                combined_features = {**recipe_features, **user_features}
+                combined_features['rating'] = rating['rating']
+                ratings_list.append(combined_features)
         
-        return recipe_df, pd.DataFrame(ratings_data)
+        return recipe_df, pd.DataFrame(ratings_list)
     
     def _extract_recipe_features(self, recipe):
         """Extrae características numéricas de una receta"""
         features = {
-            'recipe_id': recipe.id,
-            'prep_time': recipe.prep_time or 0,
-            'cook_time': recipe.cook_time or 0,
-            'total_time': recipe.total_time,
-            'servings': recipe.servings or 4,
-            'num_ingredients': len(recipe.ingredients),
-            'difficulty_easy': 1 if recipe.difficulty == 'fácil' else 0,
-            'difficulty_medium': 1 if recipe.difficulty == 'medio' else 0,
-            'difficulty_hard': 1 if recipe.difficulty == 'difícil' else 0,
-            'cuisine_mexican': 1 if recipe.cuisine_type == 'mexicana' else 0,
-            'cuisine_italian': 1 if recipe.cuisine_type == 'italiana' else 0,
-            'cuisine_asian': 1 if recipe.cuisine_type == 'asiática' else 0,
-            'avg_rating': recipe.average_rating
+            'recipe_id': recipe.get('id', 0),
+            'prep_time': recipe.get('prep_time', 0),
+            'cook_time': recipe.get('cook_time', 0),
+            'total_time': (recipe.get('prep_time', 0) + recipe.get('cook_time', 0)),
+            'servings': recipe.get('servings', 4),
+            'num_ingredients': len(recipe.get('ingredients', [])),
+            'difficulty_easy': 1 if recipe.get('difficulty') == 'fácil' else 0,
+            'difficulty_medium': 1 if recipe.get('difficulty') == 'medio' else 0,
+            'difficulty_hard': 1 if recipe.get('difficulty') == 'difícil' else 0,
+            'cuisine_mexican': 1 if recipe.get('cuisine_type') == 'mexicana' else 0,
+            'cuisine_italian': 1 if recipe.get('cuisine_type') == 'italiana' else 0,
+            'cuisine_asian': 1 if recipe.get('cuisine_type') == 'asiática' else 0,
+            'cuisine_mediterranean': 1 if recipe.get('cuisine_type') == 'mediterránea' else 0,
+            'cuisine_latin': 1 if recipe.get('cuisine_type') == 'latina' else 0,
+            'avg_rating': recipe.get('avg_rating', 3.0)
         }
         
         # Características nutricionales
-        if recipe.nutritional_info:
-            nutrition = recipe.nutritional_info
+        nutrition = recipe.get('nutritional_info', {})
+        if nutrition:
             features.update({
-                'calories': nutrition.calories_per_serving or 0,
-                'protein': nutrition.protein or 0,
-                'carbs': nutrition.carbs or 0,
-                'fat': nutrition.fat or 0,
-                'fiber': nutrition.fiber or 0,
-                'sugar': nutrition.sugar or 0,
-                'sodium': nutrition.sodium or 0
+                'calories': nutrition.get('calories_per_serving', 0),
+                'protein': nutrition.get('protein', 0),
+                'carbs': nutrition.get('carbs', 0),
+                'fat': nutrition.get('fat', 0),
+                'fiber': nutrition.get('fiber', 0),
+                'sugar': nutrition.get('sugar', 0),
+                'sodium': nutrition.get('sodium', 0)
             })
         else:
             # Valores por defecto si no hay información nutricional
@@ -100,38 +188,22 @@ class RecommendationEngine:
         
         return features
     
-    def _extract_user_features(self, user):
+    def _extract_user_features(self, user_profile):
         """Extrae características del usuario"""
         features = {
-            'user_id': user.id,
-            'has_dietary_restrictions': len(user.dietary_restrictions) > 0,
-            'num_ratings': len(user.recipe_ratings),
-            'avg_rating_given': np.mean([r.rating for r in user.recipe_ratings]) if user.recipe_ratings else 3.0
+            'has_dietary_restrictions': len(user_profile.get('dietary_restrictions', [])) > 0,
+            'avg_rating_given': user_profile.get('avg_rating_given', 3.0),
+            'is_vegetarian': 'vegetariano' in user_profile.get('dietary_restrictions', []),
+            'is_vegan': 'vegano' in user_profile.get('dietary_restrictions', []),
+            'gluten_free': 'sin gluten' in user_profile.get('dietary_restrictions', [])
         }
-        
-        # Preferencias del usuario
-        if user.user_preferences:
-            pref = user.user_preferences[0]
-            features.update({
-                'max_prep_time': pref.max_prep_time or 60,
-                'prefers_easy': 1 if pref.difficulty_preference == 'fácil' else 0,
-                'prefers_medium': 1 if pref.difficulty_preference == 'medio' else 0,
-                'prefers_hard': 1 if pref.difficulty_preference == 'difícil' else 0
-            })
-        else:
-            features.update({
-                'max_prep_time': 60,
-                'prefers_easy': 0,
-                'prefers_medium': 0,
-                'prefers_hard': 0
-            })
         
         return features
     
     def _train_rating_predictor(self, recipe_features, ratings_data):
         """Entrena el modelo de predicción de ratings"""
-        if len(ratings_data) < 10:  # Necesitamos datos suficientes
-            print("Insuficientes datos de rating para entrenar el modelo.")
+        if len(ratings_data) < 5:  # Necesitamos datos suficientes
+            print("⚠️ Insuficientes datos de rating para entrenar el modelo.")
             return
         
         # Preparar características para entrenamiento
@@ -147,25 +219,25 @@ class RecommendationEngine:
         
         # Calcular accuracy
         score = self.rating_predictor.score(X_scaled, y)
-        print(f"Accuracy del modelo de rating: {score:.3f}")
+        print(f"✅ Accuracy del modelo de rating: {score:.3f}")
     
-    def rank_recipes(self, recipes, user_id, available_ingredients):
+    def rank_recipes(self, recipes, user_profile, available_ingredients):
         """Rankea recetas usando machine learning"""
         if not recipes:
             return []
         
-        user = User.query.get(user_id)
-        if not user:
-            return recipes
+        if not self.is_trained:
+            print("⚠️ Modelos no entrenados. Usando ranking básico.")
+            return self._basic_ranking(recipes, available_ingredients)
         
         scored_recipes = []
         
         for recipe in recipes:
             # Calcular score basado en contenido
-            content_score = self.content_filter.calculate_similarity(recipe, available_ingredients)
+            content_score = self._calculate_content_score(recipe, available_ingredients)
             
             # Predecir rating del usuario para esta receta
-            predicted_rating = self._predict_user_rating(user, recipe)
+            predicted_rating = self._predict_user_rating(user_profile, recipe)
             
             # Calcular score de cobertura de ingredientes
             coverage_score = self._calculate_ingredient_coverage(recipe, available_ingredients)
@@ -184,12 +256,40 @@ class RecommendationEngine:
         
         return [recipe for recipe, score in scored_recipes]
     
-    def _predict_user_rating(self, user, recipe):
+    def _basic_ranking(self, recipes, available_ingredients):
+        """Ranking básico cuando los modelos ML no están disponibles"""
+        scored_recipes = []
+        
+        for recipe in recipes:
+            # Score simple basado en cobertura de ingredientes y rating
+            coverage = self._calculate_ingredient_coverage(recipe, available_ingredients)
+            rating = recipe.get('avg_rating', 3.0)
+            
+            # Score combinado simple
+            score = 0.6 * coverage + 0.4 * (rating / 5.0)
+            scored_recipes.append((recipe, score))
+        
+        # Ordenar por score descendente
+        scored_recipes.sort(key=lambda x: x[1], reverse=True)
+        return [recipe for recipe, score in scored_recipes]
+    
+    def _calculate_content_score(self, recipe, available_ingredients):
+        """Calcula score basado en similitud de contenido"""
+        try:
+            return self.content_filter.calculate_similarity(available_ingredients, recipe.get('id', 0))
+        except:
+            # Fallback simple
+            recipe_ingredients = set(ing.lower() for ing in recipe.get('ingredients', []))
+            available_set = set(ing.lower() for ing in available_ingredients)
+            intersection = recipe_ingredients.intersection(available_set)
+            return len(intersection) / len(recipe_ingredients) if recipe_ingredients else 0
+    
+    def _predict_user_rating(self, user_profile, recipe):
         """Predice el rating que un usuario daría a una receta"""
         try:
             # Extraer características
             recipe_features = self._extract_recipe_features(recipe)
-            user_features = self._extract_user_features(user)
+            user_features = self._extract_user_features(user_profile)
             
             # Combinar características
             combined_features = {**recipe_features, **user_features}
@@ -209,25 +309,126 @@ class RecommendationEngine:
                 return max(1, min(5, predicted_rating))  # Asegurar que esté entre 1-5
             else:
                 # Si no hay modelo entrenado, usar rating promedio de la receta
-                return recipe.average_rating or 3.0
+                return recipe.get('avg_rating', 3.0)
                 
         except Exception as e:
-            print(f"Error prediciendo rating: {e}")
+            print(f"⚠️ Error prediciendo rating: {e}")
             return 3.0  # Rating neutral por defecto
     
     def _calculate_ingredient_coverage(self, recipe, available_ingredients):
         """Calcula qué porcentaje de ingredientes de la receta están disponibles"""
-        if not recipe.ingredients:
-            return 0.0
-        
-        available_set = set(ing.lower().strip() for ing in available_ingredients)
-        recipe_ingredients = set(ing.name.lower() for ing in recipe.ingredients)
-        
+        recipe_ingredients = recipe.get('ingredients', [])
         if not recipe_ingredients:
             return 0.0
         
-        intersection = available_set.intersection(recipe_ingredients)
-        return len(intersection) / len(recipe_ingredients)
+        available_set = set(ing.lower().strip() for ing in available_ingredients)
+        recipe_ingredients_set = set(ing.lower() for ing in recipe_ingredients)
+        
+        if not recipe_ingredients_set:
+            return 0.0
+        
+        intersection = available_set.intersection(recipe_ingredients_set)
+        return len(intersection) / len(recipe_ingredients_set)
+    
+    def get_recommendations(self, user_profile, available_ingredients, recipes_data=None, n_recommendations=10):
+        """Obtiene recomendaciones personalizadas para un usuario"""
+        if recipes_data is None:
+            recipes_data = self._generate_sample_recipes()
+        
+        # Filtrar recetas por restricciones dietéticas
+        filtered_recipes = self._apply_dietary_filters(recipes_data, user_profile)
+        
+        # Rankear recetas
+        ranked_recipes = self.rank_recipes(filtered_recipes, user_profile, available_ingredients)
+        
+        # Agregar información adicional a cada recomendación
+        enhanced_recommendations = []
+        for recipe in ranked_recipes[:n_recommendations]:
+            recommendation = {
+                'recipe': recipe,
+                'ingredient_coverage': self._calculate_ingredient_coverage(recipe, available_ingredients),
+                'predicted_rating': self._predict_user_rating(user_profile, recipe),
+                'missing_ingredients': self._get_missing_ingredients(recipe, available_ingredients),
+                'substitution_suggestions': self._get_substitution_suggestions(recipe, available_ingredients)
+            }
+            enhanced_recommendations.append(recommendation)
+        
+        return enhanced_recommendations
+    
+    def _apply_dietary_filters(self, recipes, user_profile):
+        """Aplica filtros de restricciones dietéticas"""
+        dietary_restrictions = user_profile.get('dietary_restrictions', [])
+        
+        if not dietary_restrictions:
+            return recipes
+        
+        filtered_recipes = []
+        for recipe in recipes:
+            is_compatible = True
+            
+            for restriction in dietary_restrictions:
+                if not self._recipe_meets_restriction(recipe, restriction):
+                    is_compatible = False
+                    break
+            
+            if is_compatible:
+                filtered_recipes.append(recipe)
+        
+        return filtered_recipes
+    
+    def _recipe_meets_restriction(self, recipe, restriction):
+        """Verifica si una receta cumple con una restricción dietética"""
+        recipe_ingredients = [ing.lower() for ing in recipe.get('ingredients', [])]
+        ingredients_text = ' '.join(recipe_ingredients)
+        
+        if restriction == 'vegetariano':
+            forbidden = ['pollo', 'carne', 'pescado', 'cerdo', 'pavo']
+            return not any(item in ingredients_text for item in forbidden)
+        
+        elif restriction == 'vegano':
+            forbidden = ['pollo', 'carne', 'pescado', 'huevo', 'leche', 'queso', 'mantequilla']
+            return not any(item in ingredients_text for item in forbidden)
+        
+        elif restriction == 'sin gluten':
+            forbidden = ['harina', 'trigo', 'pan', 'pasta']
+            return not any(item in ingredients_text for item in forbidden)
+        
+        elif restriction == 'sin lactosa':
+            forbidden = ['leche', 'queso', 'mantequilla', 'crema', 'yogurt']
+            return not any(item in ingredients_text for item in forbidden)
+        
+        return True
+    
+    def _get_missing_ingredients(self, recipe, available_ingredients):
+        """Obtiene lista de ingredientes faltantes"""
+        available_set = set(ing.lower().strip() for ing in available_ingredients)
+        recipe_ingredients = set(ing.lower() for ing in recipe.get('ingredients', []))
+        
+        missing = recipe_ingredients - available_set
+        return list(missing)
+    
+    def _get_substitution_suggestions(self, recipe, available_ingredients):
+        """Obtiene sugerencias de sustitución para ingredientes faltantes"""
+        missing_ingredients = self._get_missing_ingredients(recipe, available_ingredients)
+        
+        # Sustituciones básicas
+        substitutions = {
+            'leche': ['leche de almendra', 'leche de soja'],
+            'mantequilla': ['aceite de oliva', 'margarina'],
+            'huevo': ['linaza molida + agua', 'aquafaba'],
+            'queso': ['levadura nutricional', 'queso vegano'],
+            'pollo': ['tofu', 'seitán', 'tempeh'],
+            'carne': ['lentejas', 'frijoles', 'quinoa'],
+            'harina de trigo': ['harina de arroz', 'harina de almendra'],
+            'azúcar': ['stevia', 'miel', 'jarabe de maple']
+        }
+        
+        suggestions = {}
+        for ingredient in missing_ingredients:
+            if ingredient in substitutions:
+                suggestions[ingredient] = substitutions[ingredient]
+        
+        return suggestions
     
     def save_models(self):
         """Guarda los modelos entrenados"""
@@ -245,6 +446,8 @@ class RecommendationEngine:
         
         # Guardar filtro de contenido
         self.content_filter.save_model(f"{self.model_path}content_filter.pkl")
+        
+        print(f"✅ Modelos guardados en: {self.model_path}")
     
     def load_models(self):
         """Carga modelos previamente entrenados"""
@@ -254,78 +457,107 @@ class RecommendationEngine:
             if os.path.exists(rating_path):
                 with open(rating_path, 'rb') as f:
                     self.rating_predictor = pickle.load(f)
+                    print("✅ Rating predictor cargado")
             
             # Cargar scaler
             scaler_path = f"{self.model_path}scaler.pkl"
             if os.path.exists(scaler_path):
                 with open(scaler_path, 'rb') as f:
                     self.scaler = pickle.load(f)
+                    print("✅ Scaler cargado")
             
             # Cargar filtro de contenido
             content_path = f"{self.model_path}content_filter.pkl"
             if os.path.exists(content_path):
-                self.content_filter.load_model(content_path)
-                
+                if self.content_filter.load_model(content_path):
+                    print("✅ Content filter cargado")
+                    self.is_trained = True
+                    
         except Exception as e:
-            print(f"Error cargando modelos: {e}")
+            print(f"⚠️ Error cargando modelos: {e}")
+    
+    def analyze_model_performance(self, test_data=None):
+        """Analiza el rendimiento del modelo"""
+        if not self.is_trained:
+            print("⚠️ Modelos no entrenados para análisis")
+            return
+        
+        print("\n📊 Análisis de Rendimiento del Motor de Recomendaciones:")
+        print("=" * 60)
+        
+        # Analizar filtro de contenido
+        if hasattr(self.content_filter, 'recipe_ids'):
+            print(f"Recetas en filtro de contenido: {len(self.content_filter.recipe_ids)}")
+        
+        # Analizar predictor de ratings
+        if hasattr(self.rating_predictor, 'feature_importances_'):
+            print("Top 5 características más importantes para predicción de ratings:")
+            # Esto requeriría conocer los nombres de las características
+            importances = self.rating_predictor.feature_importances_
+            top_indices = np.argsort(importances)[-5:][::-1]
+            for i, idx in enumerate(top_indices):
+                print(f"  {i+1}. Característica {idx}: {importances[idx]:.3f}")
+
 
 class ContentBasedFilter:
-    """Filtro basado en contenido usando TF-IDF y similitud coseno"""
+    """Versión simplificada del filtro de contenido para el motor de recomendaciones"""
     
     def __init__(self):
         self.tfidf_vectorizer = TfidfVectorizer(
-            max_features=1000,
-            stop_words=None,  # Definiremos stop words en español
+            max_features=500,
+            stop_words=None,
             ngram_range=(1, 2)
         )
         self.recipe_tfidf_matrix = None
         self.recipe_texts = {}
+        self.recipe_ids = []
     
-    def train(self):
+    def train(self, recipes_data):
         """Entrena el filtro basado en contenido"""
-        recipes = Recipe.query.all()
-        
-        if not recipes:
-            print("No hay recetas disponibles para entrenar el filtro de contenido.")
+        if not recipes_data:
+            print("⚠️ No hay recetas disponibles para entrenar el filtro de contenido.")
             return
         
         # Crear textos descriptivos para cada receta
         recipe_documents = []
-        for recipe in recipes:
+        self.recipe_ids = []
+        
+        for recipe in recipes_data:
             text = self._create_recipe_text(recipe)
-            self.recipe_texts[recipe.id] = text
+            self.recipe_texts[recipe['id']] = text
             recipe_documents.append(text)
+            self.recipe_ids.append(recipe['id'])
         
         # Entrenar TF-IDF
         self.recipe_tfidf_matrix = self.tfidf_vectorizer.fit_transform(recipe_documents)
-        print(f"Filtro de contenido entrenado con {len(recipes)} recetas.")
+        print(f"✅ Filtro de contenido entrenado con {len(recipes_data)} recetas.")
     
     def _create_recipe_text(self, recipe):
         """Crea un texto descriptivo de la receta para TF-IDF"""
         text_parts = []
         
         # Nombre de la receta
-        text_parts.append(recipe.name)
+        text_parts.append(recipe.get('name', ''))
         
         # Ingredientes
-        ingredients = ' '.join([ing.name for ing in recipe.ingredients])
+        ingredients = ' '.join(recipe.get('ingredients', []))
         text_parts.append(ingredients)
         
         # Tipo de cocina
-        if recipe.cuisine_type:
-            text_parts.append(recipe.cuisine_type)
+        if recipe.get('cuisine_type'):
+            text_parts.append(recipe['cuisine_type'])
         
         # Dificultad
-        if recipe.difficulty:
-            text_parts.append(recipe.difficulty)
+        if recipe.get('difficulty'):
+            text_parts.append(recipe['difficulty'])
         
         # Descripción
-        if recipe.description:
-            text_parts.append(recipe.description)
+        if recipe.get('description'):
+            text_parts.append(recipe['description'])
         
         return ' '.join(text_parts).lower()
     
-    def calculate_similarity(self, recipe, available_ingredients):
+    def calculate_similarity(self, available_ingredients, recipe_id):
         """Calcula similitud entre receta e ingredientes disponibles"""
         if self.recipe_tfidf_matrix is None:
             return 0.0
@@ -338,15 +570,7 @@ class ContentBasedFilter:
             ingredients_vector = self.tfidf_vectorizer.transform([ingredients_text])
             
             # Encontrar índice de la receta
-            recipe_idx = None
-            recipes = Recipe.query.all()
-            for idx, r in enumerate(recipes):
-                if r.id == recipe.id:
-                    recipe_idx = idx
-                    break
-            
-            if recipe_idx is None:
-                return 0.0
+            recipe_idx = self.recipe_ids.index(recipe_id)
             
             # Calcular similitud coseno
             recipe_vector = self.recipe_tfidf_matrix[recipe_idx]
@@ -355,21 +579,23 @@ class ContentBasedFilter:
             return similarity
             
         except Exception as e:
-            print(f"Error calculando similitud: {e}")
             return 0.0
     
     def save_model(self, filepath):
         """Guarda el modelo de filtro de contenido"""
         try:
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
             model_data = {
                 'vectorizer': self.tfidf_vectorizer,
                 'tfidf_matrix': self.recipe_tfidf_matrix,
-                'recipe_texts': self.recipe_texts
+                'recipe_texts': self.recipe_texts,
+                'recipe_ids': self.recipe_ids
             }
             with open(filepath, 'wb') as f:
                 pickle.dump(model_data, f)
+            print(f"✅ Content filter guardado en: {filepath}")
         except Exception as e:
-            print(f"Error guardando filtro de contenido: {e}")
+            print(f"❌ Error guardando filtro de contenido: {e}")
     
     def load_model(self, filepath):
         """Carga el modelo de filtro de contenido"""
@@ -380,6 +606,87 @@ class ContentBasedFilter:
             self.tfidf_vectorizer = model_data['vectorizer']
             self.recipe_tfidf_matrix = model_data['tfidf_matrix']
             self.recipe_texts = model_data['recipe_texts']
+            self.recipe_ids = model_data['recipe_ids']
             
+            return True
         except Exception as e:
-            print(f"Error cargando filtro de contenido: {e}")
+            print(f"❌ Error cargando filtro de contenido: {e}")
+            return False
+
+
+def main():
+    """Función principal para probar el motor de recomendaciones"""
+    print("🚀 Iniciando Sistema de Recomendaciones...")
+    
+    # Crear instancia del motor
+    recommendation_engine = RecommendationEngine()
+    
+    # Entrenar modelos
+    recommendation_engine.train_models()
+    
+    # Analizar rendimiento
+    recommendation_engine.analyze_model_performance()
+    
+    # Probar recomendaciones
+    print("\n🔍 Probando recomendaciones personalizadas...")
+    
+    # Perfil de usuario de ejemplo
+    user_profile = {
+        'dietary_restrictions': ['vegetariano'],
+        'avg_rating_given': 4.2,
+        'preferred_cuisines': ['italiana', 'mediterránea']
+    }
+    
+    # Ingredientes disponibles
+    available_ingredients = ['tomate', 'ajo', 'cebolla', 'aceite', 'pasta']
+    
+    # Obtener recomendaciones
+    recommendations = recommendation_engine.get_recommendations(
+        user_profile, 
+        available_ingredients, 
+        n_recommendations=3
+    )
+    
+    print(f"\nRecomendaciones para usuario vegetariano con ingredientes: {available_ingredients}")
+    print("-" * 80)
+    
+    for i, rec in enumerate(recommendations, 1):
+        recipe = rec['recipe']
+        print(f"\n{i}. {recipe['name']}")
+        print(f"   Rating predicho: {rec['predicted_rating']:.1f}/5.0")
+        print(f"   Cobertura de ingredientes: {rec['ingredient_coverage']:.1%}")
+        print(f"   Ingredientes faltantes: {rec['missing_ingredients']}")
+        if rec['substitution_suggestions']:
+            print(f"   Sustituciones sugeridas: {rec['substitution_suggestions']}")
+    
+    # Probar con usuario sin restricciones
+    print("\n" + "="*80)
+    print("🔍 Probando con usuario sin restricciones dietéticas...")
+    
+    user_profile_2 = {
+        'dietary_restrictions': [],
+        'avg_rating_given': 3.8,
+        'preferred_cuisines': ['latina', 'mexicana']
+    }
+    
+    available_ingredients_2 = ['pollo', 'arroz', 'cebolla', 'tomate']
+    
+    recommendations_2 = recommendation_engine.get_recommendations(
+        user_profile_2, 
+        available_ingredients_2, 
+        n_recommendations=3
+    )
+    
+    print(f"\nRecomendaciones para usuario general con ingredientes: {available_ingredients_2}")
+    print("-" * 80)
+    
+    for i, rec in enumerate(recommendations_2, 1):
+        recipe = rec['recipe']
+        print(f"\n{i}. {recipe['name']}")
+        print(f"   Rating predicho: {rec['predicted_rating']:.1f}/5.0")
+        print(f"   Cobertura de ingredientes: {rec['ingredient_coverage']:.1%}")
+        print(f"   Tipo de cocina: {recipe.get('cuisine_type', 'N/A')}")
+
+
+if __name__ == "__main__":
+    main()

@@ -65,7 +65,7 @@
                 </div>
                 <div class="col-6 col-md-3 meta-item">
                     <i class="fas fa-signal difficulty-{{ recipe.difficulty or 'fácil' }}"></i>
-                    <h6 class="mb-1 mt-2">{{ recipe.difficulty|title or 'Fácil' }}</h6>
+                    <h6 class="mb-1 mt-2">{{ (recipe.difficulty or 'Fácil')|title }}</h6>
                     <small class="text-muted">Dificultad</small>
                 </div>
             </div>
@@ -79,7 +79,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <ul class="list-unstyled">
-                            {% for ingredient in recipe.ingredients[:((recipe.ingredients|length + 1) // 2)] %}
+                            {% set half_point = ((recipe.ingredients|length + 1) // 2) %}
+                            {% for ingredient in recipe.ingredients[:half_point] %}
                             <li>
                                 <span class="ingredient-name">{{ ingredient.name }}</span>
                                 {% if ingredient.category %}
@@ -92,7 +93,7 @@
                     {% if recipe.ingredients|length > 1 %}
                     <div class="col-md-6">
                         <ul class="list-unstyled">
-                            {% for ingredient in recipe.ingredients[((recipe.ingredients|length + 1) // 2):] %}
+                            {% for ingredient in recipe.ingredients[half_point:] %}
                             <li>
                                 <span class="ingredient-name">{{ ingredient.name }}</span>
                                 {% if ingredient.category %}
@@ -181,23 +182,23 @@
                             <tbody>
                                 <tr>
                                     <td><strong>Calorías</strong></td>
-                                    <td class="text-end">{{ "%.0f"|format(nutritional_analysis.calories_per_serving) }} kcal</td>
+                                    <td class="text-end">{{ "%.0f"|format(nutritional_analysis.calories_per_serving or 0) }} kcal</td>
                                 </tr>
                                 <tr>
                                     <td>Proteínas</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.protein) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.protein or 0) }}g</td>
                                 </tr>
                                 <tr>
                                     <td>Carbohidratos</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.carbs) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.carbs or 0) }}g</td>
                                 </tr>
                                 <tr>
                                     <td>Grasas</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fat) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fat or 0) }}g</td>
                                 </tr>
                                 <tr>
                                     <td>Fibra</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fiber) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fiber or 0) }}g</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -256,13 +257,13 @@
                         <div class="mb-3">
                             {{ rating_form.rating.label(class="form-label") }}
                             {{ rating_form.rating(class="form-select", 
-                                value=user_rating.rating if user_rating else '') }}
+                                value=(user_rating.rating if user_rating else '')) }}
                         </div>
                         
                         <div class="mb-3">
                             {{ rating_form.comment.label(class="form-label") }}
                             {{ rating_form.comment(class="form-control", rows="3",
-                                value=user_rating.comment if user_rating else '') }}
+                                value=(user_rating.comment if user_rating else '')) }}
                         </div>
                         
                         <div class="d-grid">
@@ -373,7 +374,15 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
-                                    <h6 class="mb-1">{{ rating.user.username }}</h6>
+                                    <h6 class="mb-1">
+                                        {% if rating.user %}
+                                            {{ rating.user.username }}
+                                        {% elif rating.rating_user %}
+                                            {{ rating.rating_user.username }}
+                                        {% else %}
+                                            Usuario ID {{ rating.user_id }}
+                                        {% endif %}
+                                    </h6>
                                     <div class="rating-stars">
                                         {% for i in range(rating.rating) %}
                                             <i class="fas fa-star"></i>
@@ -383,7 +392,13 @@
                                         {% endfor %}
                                     </div>
                                 </div>
-                                <small class="text-muted">{{ rating.created_at.strftime('%d/%m/%Y') }}</small>
+                                <small class="text-muted">
+                                    {% if rating.created_at %}
+                                        {{ rating.created_at.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        Fecha no disponible
+                                    {% endif %}
+                                </small>
                             </div>
                             {% if rating.comment %}
                             <p class="card-text">{{ rating.comment }}</p>
@@ -393,6 +408,16 @@
                 </div>
                 {% endfor %}
             </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h4 class="text-muted">
+                <i class="fas fa-comment-slash me-2"></i>
+                Aún no hay comentarios
+            </h4>
+            <p class="text-muted">¡Sé el primero en calificar esta receta!</p>
         </div>
     </div>
     {% endif %}
@@ -447,30 +472,15 @@
         const content = document.getElementById('substitutions-content');
         
         if (section.style.display === 'none') {
-            // Cargar sustituciones dinámicamente
-            fetch(`/api/recipe/${{{ recipe.id }}}/substitutions`)
-                .then(response => response.json())
-                .then(data => {
-                    let html = '';
-                    for (const [ingredient, substitutes] of Object.entries(data)) {
-                        html += `<div class="substitution-item">
-                            <div class="original mb-2">${ingredient}:</div>`;
-                        substitutes.forEach(sub => {
-                            html += `<div class="substitute ms-3">
-                                • ${sub.substitute} (${sub.ratio})
-                                ${sub.notes ? ` - ${sub.notes}` : ''}
-                            </div>`;
-                        });
-                        html += '</div>';
-                    }
-                    content.innerHTML = html || '<p class="text-muted">No hay sustitutos disponibles.</p>';
-                })
-                .catch(error => {
-                    content.innerHTML = '<p class="text-danger">Error cargando sustitutos.</p>';
-                });
-            
+            // Simular carga de sustituciones
+            content.innerHTML = '<p class="text-muted">Cargando sustitutos...</p>';
             section.style.display = 'block';
             btn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Sustitutos';
+            
+            // Simular contenido después de un momento
+            setTimeout(() => {
+                content.innerHTML = '<p class="text-muted">No hay sustitutos específicos disponibles.</p>';
+            }, 1000);
         } else {
             section.style.display = 'none';
             btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Ver Sustitutos';
@@ -486,10 +496,9 @@
                 url: window.location.href
             });
         } else {
-            // Fallback para navegadores que no soportan Web Share API
             const url = window.location.href;
             navigator.clipboard.writeText(url).then(() => {
-                showToast('Enlace copiado al portapapeles', 'success');
+                alert('Enlace copiado al portapapeles');
             });
         }
     }
@@ -514,7 +523,7 @@
         });
         
         if (ingredients.length === 0) {
-            showToast('Selecciona al menos un ingrediente', 'warning');
+            alert('Selecciona al menos un ingrediente');
             return;
         }
         
@@ -524,48 +533,28 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `lista_compras_{{ recipe.name|replace(' ', '_') }}.txt`;
+        a.download = 'lista_compras_{{ recipe.name|replace(" ", "_") }}.txt';
         a.click();
         URL.revokeObjectURL(url);
         
-        showToast('Lista de compras descargada', 'success');
+        alert('Lista de compras descargada');
     }
     
     // Función para guardar en favoritos
     function saveToFavorites(recipeId) {
-        // Aquí iría la lógica para guardar en favoritos
-        // Por ahora, solo mostramos un mensaje
-        showToast('Funcionalidad de favoritos en desarrollo', 'info');
+        alert('Funcionalidad de favoritos en desarrollo');
     }
     
-    // Animaciones al cargar
-    document.addEventListener('DOMContentLoaded', function() {
-        // Animar elementos de la página
-        document.querySelectorAll('.instruction-step').forEach((step, index) => {
-            step.style.animationDelay = `${index * 0.1}s`;
-            step.classList.add('fade-in');
-        });
-        
-        // Configurar tooltips si los hay
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        
-        // Lazy loading para imágenes
-        const images = document.querySelectorAll('img[data-src]');
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.src = img.dataset.src;
-                    img.classList.remove('lazy');
-                    imageObserver.unobserve(img);
-                }
-            });
-        });
-        
-        images.forEach(img => imageObserver.observe(img));
-    });
+    // Función para agregar a PDF
+    function addToPDF(recipeId) {
+        let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
+        if (!pdfList.includes(recipeId)) {
+            pdfList.push(recipeId);
+            localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
+            alert('Receta agregada a tu lista de PDF');
+        } else {
+            alert('Esta receta ya está en tu lista de PDF');
+        }
+    }
 </script>
-{% endblock %}
+{% endblock %}  

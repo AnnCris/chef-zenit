@@ -56,57 +56,103 @@ def get_recommendations():
     """Obtiene recomendaciones basadas en ingredientes"""
     form = IngredientInputForm()
     
+    print(f"🔍 DEBUG: Método: {request.method}")
+    print(f"🔍 DEBUG: Form válido: {form.validate_on_submit()}")
+    print(f"🔍 DEBUG: Form errors: {form.errors}")
+    
     if form.validate_on_submit():
         ingredients_text = form.ingredients.data
+        print(f"🔍 DEBUG: Ingredientes recibidos: '{ingredients_text}'")
         
-        # Obtener preferencias del usuario
-        preferences = {}
-        if current_user.user_preferences:
-            pref = current_user.user_preferences[0]
-            preferences = {
-                'max_prep_time': pref.max_prep_time,
-                'difficulty_preference': pref.difficulty_preference
-            }
+        if not ingredients_text or not ingredients_text.strip():
+            flash('Por favor ingresa algunos ingredientes', 'error')
+            return redirect(url_for('main.dashboard'))
         
-        # Obtener recomendaciones del sistema experto
-        recommendations = expert_system.get_recommendations(
-            current_user.id, 
-            ingredients_text.split(','),
-            preferences
-        )
-        
-        # Calcular información adicional para cada receta
-        enhanced_recommendations = []
-        for recipe in recommendations:
-            # Calcular ingredientes faltantes
-            missing_info = expert_system.calculate_missing_ingredients(
-                recipe, ingredients_text.split(',')
+        try:
+            # Obtener preferencias del usuario
+            preferences = {}
+            if current_user.user_preferences:
+                pref = current_user.user_preferences[0]
+                preferences = {
+                    'max_prep_time': pref.max_prep_time,
+                    'difficulty_preference': pref.difficulty_preference
+                }
+            
+            print(f"🔍 DEBUG: Preferencias del usuario: {preferences}")
+            
+            # Obtener recomendaciones del sistema experto
+            recommendations = expert_system.get_recommendations(
+                current_user.id, 
+                ingredients_text,
+                preferences
             )
             
-            # Obtener sustituciones
-            substitutions = expert_system.get_ingredient_substitutions(
-                recipe, ingredients_text.split(',')
-            )
+            print(f"🔍 DEBUG: Recomendaciones obtenidas: {len(recommendations)}")
+            for i, recipe in enumerate(recommendations):
+                print(f"🔍 DEBUG: {i+1}. {recipe.name}")
             
-            # Análisis nutricional
-            nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
+            if not recommendations:
+                flash('No se encontraron recetas con esos ingredientes. Intenta con otros ingredientes o verifica que estén bien escritos.', 'warning')
+                return redirect(url_for('main.dashboard'))
             
-            # Recetas similares
-            similar_recipes = clustering_model.get_similar_recipes(recipe.id, 3)
+            # Calcular información adicional para cada receta
+            enhanced_recommendations = []
+            for recipe in recommendations:
+                try:
+                    # Calcular ingredientes faltantes
+                    missing_info = expert_system.calculate_missing_ingredients(
+                        recipe, ingredients_text.split(',')
+                    )
+                    
+                    # Obtener sustituciones
+                    substitutions = expert_system.get_ingredient_substitutions(
+                        recipe, ingredients_text.split(',')
+                    )
+                    
+                    # Análisis nutricional
+                    nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
+                    
+                    # Recetas similares (simplificado por ahora)
+                    similar_recipes = []
+                    
+                    enhanced_recommendations.append({
+                        'recipe': recipe,
+                        'missing_info': missing_info,
+                        'substitutions': substitutions,
+                        'nutritional_analysis': nutritional_analysis,
+                        'similar_recipes': similar_recipes
+                    })
+                    
+                except Exception as e:
+                    print(f"❌ ERROR procesando receta {recipe.name}: {e}")
+                    # Agregar receta básica sin información adicional
+                    enhanced_recommendations.append({
+                        'recipe': recipe,
+                        'missing_info': {'missing': [], 'available': [], 'coverage_percentage': 0},
+                        'substitutions': {},
+                        'nutritional_analysis': None,
+                        'similar_recipes': []
+                    })
             
-            enhanced_recommendations.append({
-                'recipe': recipe,
-                'missing_info': missing_info,
-                'substitutions': substitutions,
-                'nutritional_analysis': nutritional_analysis,
-                'similar_recipes': similar_recipes
-            })
-        
-        return render_template('recommendations.html', 
-                             recommendations=enhanced_recommendations,
-                             search_ingredients=ingredients_text)
+            print(f"🔍 DEBUG: Recomendaciones mejoradas: {len(enhanced_recommendations)}")
+            
+            return render_template('recommendations.html', 
+                                 recommendations=enhanced_recommendations,
+                                 search_ingredients=ingredients_text)
+                                 
+        except Exception as e:
+            print(f"❌ ERROR en get_recommendations: {e}")
+            import traceback
+            traceback.print_exc()
+            flash(f'Error al obtener recomendaciones: {str(e)}', 'error')
+            return redirect(url_for('main.dashboard'))
     
-    flash('Por favor ingresa algunos ingredientes', 'error')
+    # Si el formulario no es válido
+    print(f"❌ DEBUG: Formulario no válido. Errores: {form.errors}")
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f'Error en {field}: {error}', 'error')
+    
     return redirect(url_for('main.dashboard'))
 
 @main.route('/recipe/<int:recipe_id>')
@@ -128,11 +174,22 @@ def recipe_detail(recipe_id):
     # Análisis nutricional
     nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
     
-    # Recetas similares
-    similar_recipes = clustering_model.get_similar_recipes(recipe_id, 4)
+    # Recetas similares - usando clustering si está disponible
+    similar_recipes = []
+    try:
+        if hasattr(clustering_model, 'get_similar_recipes'):
+            similar_recipes = clustering_model.get_similar_recipes(recipe_id, 4)
+    except Exception as e:
+        print(f"Error obteniendo recetas similares: {e}")
+        # Fallback: obtener recetas del mismo tipo de cocina
+        if recipe.cuisine_type:
+            similar_recipes = Recipe.query.filter(
+                Recipe.cuisine_type == recipe.cuisine_type,
+                Recipe.id != recipe_id
+            ).limit(4).all()
     
-    # Consejos de cocina
-    cooking_tips = expert_system.nlp_processor.generate_cooking_tips(
+    # Consejos de cocina usando el expert_system
+    cooking_tips = expert_system.generate_cooking_tips(
         recipe, 
         'principiante' if current_user.is_authenticated else 'principiante'
     )
@@ -144,6 +201,60 @@ def recipe_detail(recipe_id):
                          nutritional_analysis=nutritional_analysis,
                          similar_recipes=similar_recipes,
                          cooking_tips=cooking_tips)
+
+def generate_simple_cooking_tips(recipe):
+    """Genera consejos de cocina simples sin usar NLP"""
+    tips = []
+    
+    # Consejos generales
+    tips.append("Lee toda la receta antes de empezar a cocinar")
+    tips.append("Prepara todos los ingredientes antes de comenzar (mise en place)")
+    
+    # Consejos específicos según ingredientes
+    recipe_ingredients = [ing.name.lower() for ing in recipe.ingredients]
+    ingredients_text = ' '.join(recipe_ingredients)
+    
+    if 'ajo' in ingredients_text:
+        tips.append("Para pelar ajo fácilmente, aplástalo ligeramente con el lado plano del cuchillo")
+    
+    if 'cebolla' in ingredients_text:
+        tips.append("Para evitar llorar al cortar cebolla, refrigérala 30 minutos antes")
+    
+    if 'arroz' in ingredients_text:
+        tips.append("Lava el arroz hasta que el agua salga clara para mejor textura")
+    
+    if 'pollo' in ingredients_text:
+        tips.append("Asegúrate de que el pollo alcance 75°C de temperatura interna")
+    
+    if 'pasta' in ingredients_text:
+        tips.append("Agrega sal al agua cuando hierva, antes de añadir la pasta")
+    
+    if 'huevo' in ingredients_text:
+        tips.append("Usa huevos a temperatura ambiente para mejores resultados")
+    
+    # Consejos según tiempo de preparación
+    if recipe.total_time and recipe.total_time > 60:
+        tips.append("Esta receta toma tiempo, considera prepararla en fin de semana")
+    
+    if recipe.difficulty == 'difícil':
+        tips.append("Lee cada paso cuidadosamente y no te apresures")
+    elif recipe.difficulty == 'fácil':
+        tips.append("Esta es una receta perfecta para principiantes")
+    
+    # Consejos según tipo de cocina
+    if recipe.cuisine_type:
+        cuisine_tips = {
+            'italiana': "Usa ingredientes frescos de buena calidad",
+            'mexicana': "Ajusta el nivel de picante según tu tolerancia",
+            'asiática': "Ten todos los ingredientes listos antes de empezar a cocinar",
+            'mediterránea': "Usa aceite de oliva extra virgen para mejor sabor",
+            'francesa': "La técnica es importante, sigue los pasos con precisión"
+        }
+        if recipe.cuisine_type in cuisine_tips:
+            tips.append(cuisine_tips[recipe.cuisine_type])
+    
+    # Retornar máximo 5 consejos
+    return tips[:5]
 
 @main.route('/rate_recipe/<int:recipe_id>', methods=['POST'])
 @login_required

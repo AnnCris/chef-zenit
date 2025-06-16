@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 import pickle
 import matplotlib.pyplot as plt
-from app.models import Recipe, User, RecipeRating, Ingredient, NutritionalInfo
+import os
 
 class RecipeClustering:
     def __init__(self, n_clusters=8):
@@ -17,27 +17,158 @@ class RecipeClustering:
         self.cluster_labels = {}
         self.cluster_descriptions = {}
         
-    def prepare_recipe_features(self):
+    def prepare_recipe_features(self, recipes_data=None):
         """
         Prepara las características de las recetas para clustering
+        Si no se proporciona recipes_data, usa datos de ejemplo
         """
-        recipes = Recipe.query.all()
-        if not recipes:
-            return None
+        if recipes_data is None:
+            recipes_data = self._generate_sample_data()
         
         features_list = []
         recipe_ids = []
         
-        for recipe in recipes:
+        for recipe in recipes_data:
             features = self._extract_clustering_features(recipe)
             features_list.append(features)
-            recipe_ids.append(recipe.id)
+            recipe_ids.append(recipe.get('id', len(recipe_ids) + 1))
         
         # Crear DataFrame
         df = pd.DataFrame(features_list)
         self.feature_names = df.columns.tolist()
         
         return df, recipe_ids
+    
+    def _generate_sample_data(self):
+        """Genera datos de ejemplo para pruebas"""
+        sample_recipes = [
+            {
+                'id': 1,
+                'name': 'Arroz con Pollo',
+                'prep_time': 15,
+                'cook_time': 25,
+                'servings': 4,
+                'difficulty': 'medio',
+                'cuisine_type': 'latina',
+                'ingredients': ['arroz', 'pollo', 'cebolla', 'ajo', 'pimiento'],
+                'nutritional_info': {
+                    'calories_per_serving': 450,
+                    'protein': 25,
+                    'carbs': 55,
+                    'fat': 12,
+                    'fiber': 3,
+                    'sugar': 6,
+                    'sodium': 800,
+                    'vitamin_a': 185,
+                    'vitamin_c': 25,
+                    'iron': 2.4,
+                    'calcium': 45
+                },
+                'ratings': [5, 4, 5, 4],
+                'avg_rating': 4.5
+            },
+            {
+                'id': 2,
+                'name': 'Ensalada César',
+                'prep_time': 10,
+                'cook_time': 0,
+                'servings': 2,
+                'difficulty': 'fácil',
+                'cuisine_type': 'italiana',
+                'ingredients': ['lechuga', 'queso', 'ajo', 'limón', 'pan'],
+                'nutritional_info': {
+                    'calories_per_serving': 280,
+                    'protein': 8,
+                    'carbs': 15,
+                    'fat': 22,
+                    'fiber': 4,
+                    'sugar': 3,
+                    'sodium': 650,
+                    'vitamin_a': 312,
+                    'vitamin_c': 18,
+                    'iron': 1.8,
+                    'calcium': 125
+                },
+                'ratings': [4, 5, 4],
+                'avg_rating': 4.3
+            },
+            {
+                'id': 3,
+                'name': 'Sopa de Lentejas',
+                'prep_time': 10,
+                'cook_time': 35,
+                'servings': 4,
+                'difficulty': 'fácil',
+                'cuisine_type': 'mediterránea',
+                'ingredients': ['lenteja', 'cebolla', 'ajo', 'zanahoria', 'apio'],
+                'nutritional_info': {
+                    'calories_per_serving': 320,
+                    'protein': 18,
+                    'carbs': 45,
+                    'fat': 8,
+                    'fiber': 12,
+                    'sugar': 8,
+                    'sodium': 400,
+                    'vitamin_a': 458,
+                    'vitamin_c': 12,
+                    'iron': 4.2,
+                    'calcium': 62
+                },
+                'ratings': [5, 5, 4, 5],
+                'avg_rating': 4.7
+            },
+            {
+                'id': 4,
+                'name': 'Pasta Primavera',
+                'prep_time': 15,
+                'cook_time': 15,
+                'servings': 4,
+                'difficulty': 'fácil',
+                'cuisine_type': 'italiana',
+                'ingredients': ['pasta', 'brócoli', 'zanahoria', 'calabaza', 'pimiento'],
+                'nutritional_info': {
+                    'calories_per_serving': 365,
+                    'protein': 12,
+                    'carbs': 58,
+                    'fat': 10,
+                    'fiber': 8,
+                    'sugar': 12,
+                    'sodium': 520,
+                    'vitamin_a': 685,
+                    'vitamin_c': 95,
+                    'iron': 3.2,
+                    'calcium': 95
+                },
+                'ratings': [4, 4, 5],
+                'avg_rating': 4.3
+            },
+            {
+                'id': 5,
+                'name': 'Tacos de Pollo',
+                'prep_time': 20,
+                'cook_time': 15,
+                'servings': 4,
+                'difficulty': 'medio',
+                'cuisine_type': 'mexicana',
+                'ingredients': ['pollo', 'tortilla', 'cebolla', 'chile', 'cilantro'],
+                'nutritional_info': {
+                    'calories_per_serving': 380,
+                    'protein': 25,
+                    'carbs': 32,
+                    'fat': 15,
+                    'fiber': 5,
+                    'sugar': 4,
+                    'sodium': 680,
+                    'vitamin_a': 125,
+                    'vitamin_c': 35,
+                    'iron': 2.8,
+                    'calcium': 85
+                },
+                'ratings': [5, 4, 5],
+                'avg_rating': 4.6
+            }
+        ]
+        return sample_recipes
     
     def _extract_clustering_features(self, recipe):
         """
@@ -46,45 +177,48 @@ class RecipeClustering:
         features = {}
         
         # Características básicas de la receta
-        features['prep_time'] = recipe.prep_time or 30
-        features['cook_time'] = recipe.cook_time or 30
+        features['prep_time'] = recipe.get('prep_time', 30)
+        features['cook_time'] = recipe.get('cook_time', 30)
         features['total_time'] = features['prep_time'] + features['cook_time']
-        features['servings'] = recipe.servings or 4
-        features['num_ingredients'] = len(recipe.ingredients)
+        features['servings'] = recipe.get('servings', 4)
+        features['num_ingredients'] = len(recipe.get('ingredients', []))
         
         # Dificultad (one-hot encoding)
-        features['difficulty_easy'] = 1 if recipe.difficulty == 'fácil' else 0
-        features['difficulty_medium'] = 1 if recipe.difficulty == 'medio' else 0
-        features['difficulty_hard'] = 1 if recipe.difficulty == 'difícil' else 0
+        difficulty = recipe.get('difficulty', 'fácil')
+        features['difficulty_easy'] = 1 if difficulty == 'fácil' else 0
+        features['difficulty_medium'] = 1 if difficulty == 'medio' else 0
+        features['difficulty_hard'] = 1 if difficulty == 'difícil' else 0
         
         # Tipo de cocina (one-hot encoding)
         cuisines = ['mexicana', 'italiana', 'asiática', 'mediterránea', 'francesa', 'americana', 'india', 'árabe']
+        cuisine_type = recipe.get('cuisine_type', '')
         for cuisine in cuisines:
-            features[f'cuisine_{cuisine}'] = 1 if recipe.cuisine_type == cuisine else 0
+            features[f'cuisine_{cuisine}'] = 1 if cuisine_type == cuisine else 0
         
         # Características nutricionales
-        if recipe.nutritional_info:
-            nutrition = recipe.nutritional_info
-            features['calories_per_serving'] = nutrition.calories_per_serving or 400
-            features['protein_ratio'] = (nutrition.protein or 15) / (features['calories_per_serving'] / 4)  # proteína por caloría
-            features['carb_ratio'] = (nutrition.carbs or 50) / (features['calories_per_serving'] / 4)
-            features['fat_ratio'] = (nutrition.fat or 10) / (features['calories_per_serving'] / 9)
-            features['fiber_content'] = nutrition.fiber or 3
-            features['sugar_content'] = nutrition.sugar or 10
-            features['sodium_content'] = nutrition.sodium or 800
+        nutrition = recipe.get('nutritional_info', {})
+        if nutrition:
+            features['calories_per_serving'] = nutrition.get('calories_per_serving', 400)
+            calories = features['calories_per_serving']
+            features['protein_ratio'] = (nutrition.get('protein', 15)) / (calories / 4) if calories > 0 else 0.15
+            features['carb_ratio'] = (nutrition.get('carbs', 50)) / (calories / 4) if calories > 0 else 0.50
+            features['fat_ratio'] = (nutrition.get('fat', 10)) / (calories / 9) if calories > 0 else 0.25
+            features['fiber_content'] = nutrition.get('fiber', 3)
+            features['sugar_content'] = nutrition.get('sugar', 10)
+            features['sodium_content'] = nutrition.get('sodium', 800)
             
             # Densidad de vitaminas (normalizada)
             vitamin_density = 0
-            if nutrition.vitamin_a: vitamin_density += 1
-            if nutrition.vitamin_c: vitamin_density += 1
-            if nutrition.vitamin_d: vitamin_density += 1
-            if nutrition.vitamin_b12: vitamin_density += 1
+            if nutrition.get('vitamin_a'): vitamin_density += 1
+            if nutrition.get('vitamin_c'): vitamin_density += 1
+            if nutrition.get('vitamin_d'): vitamin_density += 1
+            if nutrition.get('vitamin_b12'): vitamin_density += 1
             features['vitamin_density'] = vitamin_density
             
             # Densidad de minerales
             mineral_density = 0
-            if nutrition.iron: mineral_density += 1
-            if nutrition.calcium: mineral_density += 1
+            if nutrition.get('iron'): mineral_density += 1
+            if nutrition.get('calcium'): mineral_density += 1
             features['mineral_density'] = mineral_density
         else:
             # Valores por defecto si no hay información nutricional
@@ -106,8 +240,9 @@ class RecipeClustering:
             'spices': 0, 'fruits': 0, 'fats': 0
         }
         
-        for ingredient in recipe.ingredients:
-            category = self._categorize_ingredient(ingredient.name.lower())
+        ingredients = recipe.get('ingredients', [])
+        for ingredient in ingredients:
+            category = self._categorize_ingredient(ingredient.lower())
             if category in ingredient_categories:
                 ingredient_categories[category] += 1
         
@@ -116,8 +251,8 @@ class RecipeClustering:
             features[f'ingredient_{category}'] = count
         
         # Rating promedio de la receta
-        features['avg_rating'] = recipe.average_rating or 3.0
-        features['num_ratings'] = len(recipe.ratings)
+        features['avg_rating'] = recipe.get('avg_rating', 3.0)
+        features['num_ratings'] = len(recipe.get('ratings', []))
         
         return features
     
@@ -127,7 +262,7 @@ class RecipeClustering:
         """
         vegetables = ['tomate', 'cebolla', 'ajo', 'zanahoria', 'apio', 'pimiento', 'chile', 'calabaza', 'brócoli', 'espinaca', 'lechuga']
         proteins = ['pollo', 'carne', 'pescado', 'cerdo', 'huevo', 'frijol', 'lenteja', 'garbanzo', 'tofu']
-        grains = ['arroz', 'pasta', 'pan', 'harina', 'avena', 'quinoa', 'maíz']
+        grains = ['arroz', 'pasta', 'pan', 'harina', 'avena', 'quinoa', 'maíz', 'tortilla']
         dairy = ['leche', 'queso', 'mantequilla', 'crema', 'yogurt']
         spices = ['sal', 'pimienta', 'comino', 'orégano', 'albahaca', 'canela', 'cilantro', 'perejil']
         fruits = ['limón', 'naranja', 'manzana', 'plátano', 'fresa', 'uva', 'piña']
@@ -157,13 +292,13 @@ class RecipeClustering:
         
         return 'other'
     
-    def train_clustering(self):
+    def train_clustering(self, recipes_data=None):
         """
         Entrena el modelo de clustering
         """
         # Preparar datos
-        data, recipe_ids = self.prepare_recipe_features()
-        if data is None:
+        data, recipe_ids = self.prepare_recipe_features(recipes_data)
+        if data is None or len(data) == 0:
             print("No hay suficientes recetas para entrenar el clustering.")
             return
         
@@ -187,7 +322,7 @@ class RecipeClustering:
         # Generar descripciones de clusters
         self._generate_cluster_descriptions(data, cluster_labels)
         
-        print(f"Clustering entrenado con {len(recipe_ids)} recetas en {self.n_clusters} clusters.")
+        print(f"✅ Clustering entrenado con {len(recipe_ids)} recetas en {self.n_clusters} clusters.")
         
         return self.cluster_labels
     
@@ -210,6 +345,7 @@ class RecipeClustering:
             # Generar descripción basada en características dominantes
             description = self._interpret_cluster(cluster_stats)
             self.cluster_descriptions[cluster_id] = description
+            print(f"Cluster {cluster_id}: {description}")
     
     def _interpret_cluster(self, cluster_stats):
         """
@@ -255,27 +391,9 @@ class RecipeClustering:
         if cluster_stats['sodium_content'] < 500:
             description_parts.append("bajas en sodio")
         
-        # Analizar ingredientes dominantes
-        ingredient_cols = [col for col in cluster_stats.index if col.startswith('ingredient_')]
-        if ingredient_cols:
-            max_ingredient_type = max(ingredient_cols, key=lambda x: cluster_stats[x])
-            if cluster_stats[max_ingredient_type] > 2:
-                ingredient_type = max_ingredient_type.replace('ingredient_', '')
-                type_translations = {
-                    'vegetables': 'verduras',
-                    'proteins': 'proteínas',
-                    'grains': 'cereales',
-                    'dairy': 'lácteos',
-                    'spices': 'especias',
-                    'fruits': 'frutas',
-                    'fats': 'grasas'
-                }
-                if ingredient_type in type_translations:
-                    description_parts.append(f"con énfasis en {type_translations[ingredient_type]}")
-        
         return ", ".join(description_parts)
     
-    def get_similar_recipes(self, recipe_id, n_recommendations=5):
+    def get_similar_recipes(self, recipe_id, recipe_data, n_recommendations=5):
         """
         Obtiene recetas similares basadas en el clustering
         """
@@ -290,96 +408,21 @@ class RecipeClustering:
             if cluster == target_cluster and rid != recipe_id
         ]
         
-        # Obtener objetos Recipe
-        similar_recipes = Recipe.query.filter(Recipe.id.in_(similar_recipe_ids)).all()
+        # Filtrar recetas por IDs similares
+        similar_recipes = [recipe for recipe in recipe_data 
+                          if recipe.get('id') in similar_recipe_ids]
         
         # Ordenar por rating promedio
-        similar_recipes.sort(key=lambda x: x.average_rating or 0, reverse=True)
+        similar_recipes.sort(key=lambda x: x.get('avg_rating', 0), reverse=True)
         
         return similar_recipes[:n_recommendations]
-    
-    def get_cluster_recommendations_for_user(self, user_id, n_recommendations=10):
-        """
-        Recomienda recetas basadas en los clusters que el usuario ha calificado positivamente
-        """
-        user = User.query.get(user_id)
-        if not user or not user.recipe_ratings:
-            return []
-        
-        # Analizar clusters preferidos del usuario
-        preferred_clusters = {}
-        for rating in user.recipe_ratings:
-            if rating.rating >= 4:  # Calificaciones altas
-                recipe_cluster = self.cluster_labels.get(rating.recipe_id)
-                if recipe_cluster is not None:
-                    preferred_clusters[recipe_cluster] = preferred_clusters.get(recipe_cluster, 0) + 1
-        
-        if not preferred_clusters:
-            return []
-        
-        # Ordenar clusters por preferencia
-        sorted_clusters = sorted(preferred_clusters.items(), key=lambda x: x[1], reverse=True)
-        
-        # Obtener recetas de los clusters preferidos
-        recommended_recipes = []
-        rated_recipe_ids = {rating.recipe_id for rating in user.recipe_ratings}
-        
-        for cluster_id, _ in sorted_clusters:
-            cluster_recipe_ids = [
-                rid for rid, cluster in self.cluster_labels.items() 
-                if cluster == cluster_id and rid not in rated_recipe_ids
-            ]
-            
-            cluster_recipes = Recipe.query.filter(Recipe.id.in_(cluster_recipe_ids)).all()
-            cluster_recipes.sort(key=lambda x: x.average_rating or 0, reverse=True)
-            
-            recommended_recipes.extend(cluster_recipes)
-            
-            if len(recommended_recipes) >= n_recommendations:
-                break
-        
-        return recommended_recipes[:n_recommendations]
-    
-    def analyze_user_preferences(self, user_id):
-        """
-        Analiza las preferencias del usuario basadas en clustering
-        """
-        user = User.query.get(user_id)
-        if not user or not user.recipe_ratings:
-            return None
-        
-        # Analizar clusters de recetas bien calificadas
-        cluster_ratings = {}
-        for rating in user.recipe_ratings:
-            recipe_cluster = self.cluster_labels.get(rating.recipe_id)
-            if recipe_cluster is not None:
-                if recipe_cluster not in cluster_ratings:
-                    cluster_ratings[recipe_cluster] = []
-                cluster_ratings[recipe_cluster].append(rating.rating)
-        
-        # Calcular rating promedio por cluster
-        cluster_preferences = {}
-        for cluster_id, ratings in cluster_ratings.items():
-            avg_rating = np.mean(ratings)
-            cluster_preferences[cluster_id] = {
-                'avg_rating': avg_rating,
-                'num_ratings': len(ratings),
-                'description': self.cluster_descriptions.get(cluster_id, f"Cluster {cluster_id}")
-            }
-        
-        # Ordenar por preferencia
-        sorted_preferences = sorted(
-            cluster_preferences.items(), 
-            key=lambda x: x[1]['avg_rating'], 
-            reverse=True
-        )
-        
-        return sorted_preferences
     
     def save_model(self, filepath):
         """
         Guarda el modelo de clustering
         """
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
         model_data = {
             'kmeans': self.kmeans,
             'scaler': self.scaler,
@@ -392,6 +435,8 @@ class RecipeClustering:
         
         with open(filepath, 'wb') as f:
             pickle.dump(model_data, f)
+        
+        print(f"✅ Modelo guardado en: {filepath}")
     
     def load_model(self, filepath):
         """
@@ -409,7 +454,63 @@ class RecipeClustering:
             self.feature_names = model_data['feature_names']
             self.n_clusters = model_data['n_clusters']
             
+            print(f"✅ Modelo cargado desde: {filepath}")
             return True
         except Exception as e:
-            print(f"Error cargando modelo de clustering: {e}")
+            print(f"❌ Error cargando modelo de clustering: {e}")
             return False
+    
+    def analyze_clusters(self):
+        """
+        Analiza y muestra información sobre los clusters
+        """
+        print("\n📊 Análisis de Clusters:")
+        print("=" * 50)
+        
+        for cluster_id in range(self.n_clusters):
+            recipes_in_cluster = [rid for rid, cluster in self.cluster_labels.items() 
+                                if cluster == cluster_id]
+            description = self.cluster_descriptions.get(cluster_id, f"Cluster {cluster_id}")
+            
+            print(f"\nCluster {cluster_id}: {len(recipes_in_cluster)} recetas")
+            print(f"Descripción: {description}")
+            print(f"Recetas: {recipes_in_cluster}")
+
+
+def main():
+    """Función principal para probar el clustering"""
+    print("🧠 Iniciando entrenamiento de clustering de recetas...")
+    
+    # Crear instancia del clustering
+    clustering = RecipeClustering(n_clusters=3)  # Menos clusters para datos de ejemplo
+    
+    # Entrenar el modelo
+    cluster_labels = clustering.train_clustering()
+    
+    # Analizar resultados
+    clustering.analyze_clusters()
+    
+    # Guardar modelo
+    model_path = "ml_models/trained_models/clustering_model.pkl"
+    clustering.save_model(model_path)
+    
+    # Probar carga del modelo
+    new_clustering = RecipeClustering()
+    if new_clustering.load_model(model_path):
+        print("\n✅ Modelo cargado correctamente para verificación")
+    
+    # Probar recomendaciones
+    print("\n🔍 Probando recomendaciones similares...")
+    sample_data = clustering._generate_sample_data()
+    similar_recipes = clustering.get_similar_recipes(1, sample_data, 3)
+    
+    if similar_recipes:
+        print("Recetas similares a 'Arroz con Pollo':")
+        for recipe in similar_recipes:
+            print(f"- {recipe['name']} (Rating: {recipe['avg_rating']})")
+    else:
+        print("No se encontraron recetas similares.")
+
+
+if __name__ == "__main__":
+    main()
