@@ -1,0 +1,451 @@
+# Sistema Experto Culinario - .gitignore
+
+# ========================================
+# PYTHON
+# ========================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff (aunque no usamos Django, por si acaso)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ========================================
+# FLASK ESPECÍFICO
+# ========================================
+
+# Archivos de configuración local
+config_local.py
+local_config.py
+
+# Base de datos SQLite (si la usas)
+*.db
+*.sqlite
+*.sqlite3
+
+# Migraciones generadas automáticamente
+migrations/versions/*.pyc
+migrations/__pycache__/
+
+# Logs de Flask
+flask.log
+*.log
+
+# ========================================
+# MACHINE LEARNING
+# ========================================
+
+# Modelos entrenados
+ml_models/trained_models/
+*.pkl
+*.model
+*.h5
+*.joblib
+*.sav
+
+# Datos de entrenamiento grandes
+data/raw/
+data/processed/
+datasets/
+*.csv.bak
+*.json.bak
+
+# Checkpoints de TensorFlow/PyTorch
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+
+# NLTK data
+nltk_data/
+
+# Scikit-learn cache
+.sklearn_cache/
+
+# ========================================
+# BASE DE DATOS
+# ========================================
+
+# PostgreSQL
+*.dump
+*.sql.backup
+pg_dump_*
+
+# Archivos de respaldo de BD
+backups/
+*.backup
+*.bak
+
+# Archivos de configuración de BD
+database.ini
+db_config.ini
+
+# ========================================
+# ARCHIVOS GENERADOS
+# ========================================
+
+# PDFs generados por la aplicación
+static/pdfs/*
+!static/pdfs/.gitkeep
+
+# Imágenes subidas por usuarios
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Logs de la aplicación
+logs/
+*.log
+error.log
+access.log
+
+# ========================================
+# SISTEMA OPERATIVO
+# ========================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ========================================
+# EDITORES / IDEs
+# ========================================
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*~
+*.swp
+*.swo
+*~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Notepad++
+*.bak
+
+# ========================================
+# SEGURIDAD Y CLAVES
+# ========================================
+
+# Variables de entorno
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+
+# Claves SSH
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Certificados SSL
+*.crt
+*.cert
+*.p12
+
+# Archivos de configuración con claves
+secrets.json
+config/secrets.py
+keys.json
+
+# ========================================
+# DOCKER
+# ========================================
+
+# Docker
+Dockerfile.local
+docker-compose.override.yml
+.dockerignore
+
+# ========================================
+# HEROKU / DEPLOYMENT
+# ========================================
+
+# Heroku
+.env.heroku
+Procfile.local
+
+# Archivos de despliegue
+deployment/
+deploy_keys/
+
+# ========================================
+# TESTING
+# ========================================
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Test databases
+test.db
+test.sqlite3
+
+# ========================================
+# DOCUMENTACIÓN
+# ========================================
+
+# Sphinx build
+docs/_build/
+docs/build/
+
+# ========================================
+# ARCHIVOS DEL PROYECTO ESPECÍFICOS
+# ========================================
+
+# Archivos de prueba
+test_data/
+sample_data/
+
+# Archivos de desarrollo
+dev_notes.txt
+TODO.md
+notas_desarrollo.md
+
+# Archivos de configuración personal
+my_config.py
+personal_settings.py
+
+# Respaldos del desarrollador
+backup_*
+*_backup
+*.backup
+
+# Archivos temporales del sistema experto
+expert_system_cache/
+recommendation_cache/
+
+# ========================================
+# MANTENER ESTOS ARCHIVOS
+# ========================================
+
+# Mantener directorios vacíos importantes
+!static/css/.gitkeep
+!static/js/.gitkeep
+!static/images/.gitkeep
+!templates/.gitkeep
+!ml_models/.gitkeep
+
+# Archivos de ejemplo que SÍ queremos versionar
+!data/examples/
+!docs/examples/
+
+# ========================================
+# NOTAS IMPORTANTES
+# ========================================
+
+# RECUERDA:
+# - Nunca subas archivos .env con claves reales
+# - No subas modelos ML entrenados muy grandes
+# - No subas datos sensibles de usuarios
+# - Mantén las claves de API fuera del repositorio

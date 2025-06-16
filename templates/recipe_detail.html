@@ -1,0 +1,571 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.name }} - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header de la Receta -->
+    <div class="recipe-header mb-4" 
+         {% if recipe.image_path %}
+         style="background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{{ recipe.image_path }}'); background-size: cover; background-position: center;"
+         {% endif %}>
+        <div class="container py-5">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold text-white mb-3">{{ recipe.name }}</h1>
+                    {% if recipe.description %}
+                    <p class="lead text-white opacity-90">{{ recipe.description }}</p>
+                    {% endif %}
+                    
+                    <!-- Rating y acciones -->
+                    <div class="d-flex align-items-center mt-4">
+                        {% if recipe.average_rating > 0 %}
+                        <div class="rating-stars me-3">
+                            {% for i in range(recipe.average_rating|int) %}
+                                <i class="fas fa-star"></i>
+                            {% endfor %}
+                            {% for i in range(5 - recipe.average_rating|int) %}
+                                <i class="far fa-star"></i>
+                            {% endfor %}
+                            <span class="ms-2 text-white">({{ "%.1f"|format(recipe.average_rating) }} de {{ recipe.ratings|length }} valoraciones)</span>
+                        </div>
+                        {% endif %}
+                        
+                        <button onclick="addToPDF({{ recipe.id }})" class="btn btn-outline-light me-2">
+                            <i class="fas fa-plus"></i> Agregar a PDF
+                        </button>
+                        <button onclick="shareRecipe()" class="btn btn-outline-light">
+                            <i class="fas fa-share"></i> Compartir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Información Principal -->
+        <div class="col-lg-8">
+            <!-- Metadatos de la Receta -->
+            <div class="recipe-meta row g-3 mb-4">
+                <div class="col-6 col-md-3 meta-item">
+                    <i class="fas fa-clock text-primary"></i>
+                    <h6 class="mb-1 mt-2">Prep: {{ recipe.prep_time or 'N/A' }} min</h6>
+                    <small class="text-muted">Preparación</small>
+                </div>
+                <div class="col-6 col-md-3 meta-item">
+                    <i class="fas fa-fire text-danger"></i>
+                    <h6 class="mb-1 mt-2">Cook: {{ recipe.cook_time or 'N/A' }} min</h6>
+                    <small class="text-muted">Cocción</small>
+                </div>
+                <div class="col-6 col-md-3 meta-item">
+                    <i class="fas fa-users text-success"></i>
+                    <h6 class="mb-1 mt-2">{{ recipe.servings or 4 }} personas</h6>
+                    <small class="text-muted">Porciones</small>
+                </div>
+                <div class="col-6 col-md-3 meta-item">
+                    <i class="fas fa-signal difficulty-{{ recipe.difficulty or 'fácil' }}"></i>
+                    <h6 class="mb-1 mt-2">{{ recipe.difficulty|title or 'Fácil' }}</h6>
+                    <small class="text-muted">Dificultad</small>
+                </div>
+            </div>
+            
+            <!-- Ingredientes -->
+            <div class="ingredients-list mb-4">
+                <h3 class="mb-3">
+                    <i class="fas fa-list-ul text-success me-2"></i>
+                    Ingredientes
+                </h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            {% for ingredient in recipe.ingredients[:((recipe.ingredients|length + 1) // 2)] %}
+                            <li>
+                                <span class="ingredient-name">{{ ingredient.name }}</span>
+                                {% if ingredient.category %}
+                                <span class="badge badge-sm bg-light text-dark ms-2">{{ ingredient.category }}</span>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% if recipe.ingredients|length > 1 %}
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            {% for ingredient in recipe.ingredients[((recipe.ingredients|length + 1) // 2):] %}
+                            <li>
+                                <span class="ingredient-name">{{ ingredient.name }}</span>
+                                {% if ingredient.category %}
+                                <span class="badge badge-sm bg-light text-dark ms-2">{{ ingredient.category }}</span>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Botón para mostrar sustitutos -->
+                <button class="btn btn-outline-primary btn-sm mt-2" 
+                        onclick="toggleSubstitutions()" id="substitutions-btn">
+                    <i class="fas fa-exchange-alt"></i> Ver Sustitutos
+                </button>
+            </div>
+            
+            <!-- Sustituciones -->
+            <div id="substitutions-section" style="display: none;" class="mb-4">
+                <h4 class="mb-3">
+                    <i class="fas fa-exchange-alt text-warning me-2"></i>
+                    Sustitutos de Ingredientes
+                </h4>
+                <div id="substitutions-content">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+            
+            <!-- Instrucciones -->
+            <div class="instructions-list mb-4">
+                <h3 class="mb-3">
+                    <i class="fas fa-list-ol text-primary me-2"></i>
+                    Instrucciones
+                </h3>
+                {% if recipe.instructions %}
+                    {% set instructions = recipe.instructions.split('.') %}
+                    {% for instruction in instructions %}
+                        {% if instruction.strip() %}
+                        <div class="instruction-step">
+                            {{ instruction.strip() }}.
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                <p class="text-muted">No hay instrucciones disponibles para esta receta.</p>
+                {% endif %}
+            </div>
+            
+            <!-- Consejos de Cocina -->
+            {% if cooking_tips %}
+            <div class="cooking-tips mb-4">
+                <h4 class="mb-3">
+                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                    Consejos del Chef
+                </h4>
+                <div class="row">
+                    {% for tip in cooking_tips %}
+                    <div class="col-md-6 mb-2">
+                        <div class="alert alert-info py-2">
+                            <small><i class="fas fa-info-circle me-1"></i>{{ tip }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Información Nutricional -->
+            {% if nutritional_analysis %}
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Información Nutricional
+                    </h5>
+                    <small>(por porción)</small>
+                </div>
+                <div class="card-body">
+                    <div class="nutrition-table">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Calorías</strong></td>
+                                    <td class="text-end">{{ "%.0f"|format(nutritional_analysis.calories_per_serving) }} kcal</td>
+                                </tr>
+                                <tr>
+                                    <td>Proteínas</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.protein) }}g</td>
+                                </tr>
+                                <tr>
+                                    <td>Carbohidratos</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.carbs) }}g</td>
+                                </tr>
+                                <tr>
+                                    <td>Grasas</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fat) }}g</td>
+                                </tr>
+                                <tr>
+                                    <td>Fibra</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fiber) }}g</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Vitaminas principales -->
+                    {% if nutritional_analysis.vitamins.vitamin_c or nutritional_analysis.minerals.iron %}
+                    <hr>
+                    <h6 class="mb-2">Vitaminas y Minerales destacados:</h6>
+                    <div class="row g-2">
+                        {% if nutritional_analysis.vitamins.vitamin_c %}
+                        <div class="col-6">
+                            <span class="nutrition-badge bg-warning">Vitamina C</span>
+                        </div>
+                        {% endif %}
+                        {% if nutritional_analysis.minerals.iron %}
+                        <div class="col-6">
+                            <span class="nutrition-badge bg-info">Hierro</span>
+                        </div>
+                        {% endif %}
+                        {% if nutritional_analysis.minerals.calcium %}
+                        <div class="col-6">
+                            <span class="nutrition-badge bg-success">Calcio</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Recomendaciones nutricionales -->
+                    {% if nutritional_analysis.recommendations %}
+                    <hr>
+                    <h6 class="mb-2">Beneficios:</h6>
+                    {% for recommendation in nutritional_analysis.recommendations %}
+                    <div class="alert alert-success py-1 mb-1">
+                        <small>{{ recommendation }}</small>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Formulario de Calificación -->
+            {% if current_user.is_authenticated %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star text-warning me-2"></i>
+                        {% if user_rating %}Actualizar Calificación{% else %}Calificar Receta{% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.rate_recipe', recipe_id=recipe.id) }}">
+                        {{ rating_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ rating_form.rating.label(class="form-label") }}
+                            {{ rating_form.rating(class="form-select", 
+                                value=user_rating.rating if user_rating else '') }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ rating_form.comment.label(class="form-label") }}
+                            {{ rating_form.comment(class="form-control", rows="3",
+                                value=user_rating.comment if user_rating else '') }}
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ rating_form.submit(class="btn btn-warning") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Tipo de Cocina -->
+            {% if recipe.cuisine_type %}
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Tipo de Cocina</h6>
+                    <span class="badge bg-primary fs-6 px-3 py-2">{{ recipe.cuisine_type|title }}</span>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Recetas Similares -->
+            {% if similar_recipes %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-thumbs-up text-success me-2"></i>
+                        Te Puede Gustar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for similar_recipe in similar_recipes %}
+                    <div class="d-flex mb-3 {% if not loop.last %}border-bottom pb-3{% endif %}">
+                        <div class="flex-shrink-0">
+                            {% if similar_recipe.image_path %}
+                            <img src="{{ similar_recipe.image_path }}" 
+                                 class="rounded" width="60" height="60" 
+                                 style="object-fit: cover;">
+                            {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px;">
+                                <i class="fas fa-utensils text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1">
+                                <a href="{{ url_for('main.recipe_detail', recipe_id=similar_recipe.id) }}" 
+                                   class="text-decoration-none">
+                                    {{ similar_recipe.name }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> {{ similar_recipe.total_time or 'N/A' }} min
+                                {% if similar_recipe.average_rating > 0 %}
+                                • <i class="fas fa-star text-warning"></i> {{ "%.1f"|format(similar_recipe.average_rating) }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Acciones Adicionales -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>
+                        Acciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button onclick="addToPDF({{ recipe.id }})" class="btn btn-outline-primary">
+                            <i class="fas fa-file-pdf"></i> Agregar a PDF
+                        </button>
+                        <button onclick="printRecipe()" class="btn btn-outline-secondary">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                        <button onclick="showShoppingList()" class="btn btn-outline-success">
+                            <i class="fas fa-shopping-cart"></i> Lista de Compras
+                        </button>
+                        {% if current_user.is_authenticated %}
+                        <button onclick="saveToFavorites({{ recipe.id }})" class="btn btn-outline-danger">
+                            <i class="fas fa-heart"></i> Guardar Favorito
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comentarios de Usuarios -->
+    {% if recipe.ratings %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i class="fas fa-comments text-info me-2"></i>
+                Comentarios de la Comunidad ({{ recipe.ratings|length }})
+            </h3>
+            
+            <div class="row">
+                {% for rating in recipe.ratings[:6] %}
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-1">{{ rating.user.username }}</h6>
+                                    <div class="rating-stars">
+                                        {% for i in range(rating.rating) %}
+                                            <i class="fas fa-star"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - rating.rating) %}
+                                            <i class="far fa-star"></i>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ rating.created_at.strftime('%d/%m/%Y') }}</small>
+                            </div>
+                            {% if rating.comment %}
+                            <p class="card-text">{{ rating.comment }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para Lista de Compras -->
+<div class="modal fade" id="shoppingListModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    Lista de Compras - {{ recipe.name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Ingredientes necesarios para {{ recipe.servings or 4 }} porciones:</p>
+                <div class="list-group">
+                    {% for ingredient in recipe.ingredients %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ingredient-{{ loop.index }}">
+                            <label class="form-check-label" for="ingredient-{{ loop.index }}">
+                                {{ ingredient.name }}
+                            </label>
+                        </div>
+                        {% if ingredient.category %}
+                        <span class="badge bg-light text-dark">{{ ingredient.category }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" onclick="exportShoppingList()">
+                    <i class="fas fa-download"></i> Exportar Lista
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Función para mostrar/ocultar sustituciones
+    function toggleSubstitutions() {
+        const section = document.getElementById('substitutions-section');
+        const btn = document.getElementById('substitutions-btn');
+        const content = document.getElementById('substitutions-content');
+        
+        if (section.style.display === 'none') {
+            // Cargar sustituciones dinámicamente
+            fetch(`/api/recipe/${{{ recipe.id }}}/substitutions`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '';
+                    for (const [ingredient, substitutes] of Object.entries(data)) {
+                        html += `<div class="substitution-item">
+                            <div class="original mb-2">${ingredient}:</div>`;
+                        substitutes.forEach(sub => {
+                            html += `<div class="substitute ms-3">
+                                • ${sub.substitute} (${sub.ratio})
+                                ${sub.notes ? ` - ${sub.notes}` : ''}
+                            </div>`;
+                        });
+                        html += '</div>';
+                    }
+                    content.innerHTML = html || '<p class="text-muted">No hay sustitutos disponibles.</p>';
+                })
+                .catch(error => {
+                    content.innerHTML = '<p class="text-danger">Error cargando sustitutos.</p>';
+                });
+            
+            section.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-eye-slash"></i> Ocultar Sustitutos';
+        } else {
+            section.style.display = 'none';
+            btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Ver Sustitutos';
+        }
+    }
+    
+    // Función para compartir receta
+    function shareRecipe() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ recipe.name }}',
+                text: '¡Mira esta deliciosa receta!',
+                url: window.location.href
+            });
+        } else {
+            // Fallback para navegadores que no soportan Web Share API
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Enlace copiado al portapapeles', 'success');
+            });
+        }
+    }
+    
+    // Función para imprimir receta
+    function printRecipe() {
+        window.print();
+    }
+    
+    // Función para mostrar lista de compras
+    function showShoppingList() {
+        const modal = new bootstrap.Modal(document.getElementById('shoppingListModal'));
+        modal.show();
+    }
+    
+    // Función para exportar lista de compras
+    function exportShoppingList() {
+        const ingredients = [];
+        document.querySelectorAll('#shoppingListModal .form-check-input:checked').forEach(checkbox => {
+            const label = checkbox.nextElementSibling.textContent.trim();
+            ingredients.push(label);
+        });
+        
+        if (ingredients.length === 0) {
+            showToast('Selecciona al menos un ingrediente', 'warning');
+            return;
+        }
+        
+        const text = `Lista de Compras - {{ recipe.name }}\n\n${ingredients.map(ing => `• ${ing}`).join('\n')}`;
+        
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lista_compras_{{ recipe.name|replace(' ', '_') }}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showToast('Lista de compras descargada', 'success');
+    }
+    
+    // Función para guardar en favoritos
+    function saveToFavorites(recipeId) {
+        // Aquí iría la lógica para guardar en favoritos
+        // Por ahora, solo mostramos un mensaje
+        showToast('Funcionalidad de favoritos en desarrollo', 'info');
+    }
+    
+    // Animaciones al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animar elementos de la página
+        document.querySelectorAll('.instruction-step').forEach((step, index) => {
+            step.style.animationDelay = `${index * 0.1}s`;
+            step.classList.add('fade-in');
+        });
+        
+        // Configurar tooltips si los hay
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Lazy loading para imágenes
+        const images = document.querySelectorAll('img[data-src]');
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                    imageObserver.unobserve(img);
+                }
+            });
+        });
+        
+        images.forEach(img => imageObserver.observe(img));
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Recomendaciones - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header de resultados -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">
+                                <i class="fas fa-magic me-2"></i>
+                                Recomendaciones Personalizadas
+                            </h2>
+                            <p class="mb-2">
+                                Basadas en: <strong>"{{ search_ingredients }}"</strong>
+                            </p>
+                            <p class="mb-0 opacity-75">
+                                Encontramos {{ recommendations|length }} recetas perfectas para ti
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-robot fa-3x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de recomendaciones -->
+    <div class="row" id="recommendations-container">
+        {% for recommendation in recommendations %}
+        <div class="col-12 mb-4 recipe-item" 
+             data-difficulty="{{ recommendation.recipe.difficulty or 'fácil' }}"
+             data-time="{{ recommendation.recipe.total_time or 0 }}"
+             data-rating="{{ recommendation.recipe.average_rating or 0 }}">
+            
+            <div class="card recipe-card h-100">
+                <div class="row g-0">
+                    <!-- Imagen de la receta -->
+                    <div class="col-md-4">
+                        {% if recommendation.recipe.image_path %}
+                        <img src="{{ recommendation.recipe.image_path }}" 
+                             class="img-fluid h-100 w-100" 
+                             style="object-fit: cover; min-height: 250px;">
+                        {% else %}
+                        <div class="bg-light h-100 d-flex align-items-center justify-content-center" 
+                             style="min-height: 250px;">
+                            <i class="fas fa-utensils fa-3x text-muted"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Contenido de la receta -->
+                    <div class="col-md-8">
+                        <div class="card-body h-100 d-flex flex-column">
+                            <!-- Header con título y rating -->
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h4 class="card-title mb-2">
+                                        <a href="{{ url_for('main.recipe_detail', recipe_id=recommendation.recipe.id) }}" 
+                                           class="text-decoration-none">
+                                            {{ recommendation.recipe.name }}
+                                        </a>
+                                    </h4>
+                                    {% if recommendation.recipe.average_rating > 0 %}
+                                    <div class="rating-stars">
+                                        {% for i in range(recommendation.recipe.average_rating|int) %}
+                                            <i class="fas fa-star"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - recommendation.recipe.average_rating|int) %}
+                                            <i class="far fa-star"></i>
+                                        {% endfor %}
+                                        <small class="ms-2">({{ "%.1f"|format(recommendation.recipe.average_rating) }})</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <button onclick="addToPDF({{ recommendation.recipe.id }})" 
+                                        class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Descripción -->
+                            {% if recommendation.recipe.description %}
+                            <p class="card-text text-muted mb-3">
+                                {{ recommendation.recipe.description[:150] }}
+                                {% if recommendation.recipe.description|length > 150 %}...{% endif %}
+                            </p>
+                            {% endif %}
+                            
+                            <!-- Metadatos -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ recommendation.recipe.total_time or 'N/A' }} min
+                                    </small>
+                                </div>
+                                <div class="col-auto">
+                                    <small class="difficulty-{{ recommendation.recipe.difficulty or 'fácil' }}">
+                                        <i class="fas fa-signal"></i> {{ recommendation.recipe.difficulty|title or 'Fácil' }}
+                                    </small>
+                                </div>
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="fas fa-users"></i> {{ recommendation.recipe.servings or 4 }} porciones
+                                    </small>
+                                </div>
+                                {% if recommendation.recipe.cuisine_type %}
+                                <div class="col-auto">
+                                    <span class="badge bg-secondary">{{ recommendation.recipe.cuisine_type|title }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Cobertura de ingredientes -->
+                            {% if recommendation.missing_info %}
+                            <div class="mb-3">
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: {{ recommendation.missing_info.coverage_percentage }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    Tienes {{ recommendation.missing_info.coverage_percentage|round|int }}% de los ingredientes
+                                    {% if recommendation.missing_info.missing %}
+                                    • Faltan: {{ recommendation.missing_info.missing[:3]|join(', ') }}
+                                    {% if recommendation.missing_info.missing|length > 3 %}y {{ recommendation.missing_info.missing|length - 3 }} más{% endif %}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Información nutricional destacada -->
+                            {% if recommendation.nutritional_analysis %}
+                            <div class="mb-3">
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if recommendation.nutritional_analysis.macronutrients.protein > 20 %}
+                                    <span class="nutrition-badge nutrition-high-protein">Alta Proteína</span>
+                                    {% endif %}
+                                    {% if recommendation.nutritional_analysis.macronutrients.fiber > 8 %}
+                                    <span class="nutrition-badge nutrition-high-fiber">Alta Fibra</span>
+                                    {% endif %}
+                                    {% if recommendation.nutritional_analysis.calories_per_serving < 400 %}
+                                    <span class="nutrition-badge nutrition-low-carb">Bajo en Calorías</span>
+                                    {% endif %}
+                                    {% if recommendation.nutritional_analysis.minerals and recommendation.nutritional_analysis.minerals.sodium < 600 %}
+                                    <span class="nutrition-badge nutrition-low-sodium">Bajo Sodio</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Sustituciones disponibles -->
+                            {% if recommendation.substitutions %}
+                            <div class="mb-3">
+                                <button class="btn btn-outline-warning btn-sm" 
+                                        onclick="toggleSubstitutions({{ recommendation.recipe.id }})">
+                                    <i class="fas fa-exchange-alt"></i> 
+                                    Ver Sustitutos ({{ recommendation.substitutions|length }})
+                                </button>
+                                <div id="substitutions-{{ recommendation.recipe.id }}" class="mt-2" style="display: none;">
+                                    <small class="text-muted">
+                                        {% for ingredient, subs in recommendation.substitutions.items() %}
+                                        <strong>{{ ingredient }}:</strong> {{ subs[0].substitute if subs }}
+                                        {% if not loop.last %} • {% endif %}
+                                        {% endfor %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Botones de acción -->
+                            <div class="mt-auto">
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('main.recipe_detail', recipe_id=recommendation.recipe.id) }}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-eye"></i> Ver Receta
+                                    </a>
+                                    <button onclick="quickView({{ recommendation.recipe.id }})" 
+                                            class="btn btn-outline-secondary">
+                                        <i class="fas fa-expand"></i> Vista Rápida
+                                    </button>
+                                    {% if recommendation.similar_recipes %}
+                                    <button onclick="showSimilar({{ recommendation.recipe.id }})" 
+                                            class="btn btn-outline-info">
+                                        <i class="fas fa-search-plus"></i> Similares
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Mensaje si no hay resultados -->
+    {% if not recommendations %}
+    <div class="row">
+        <div class="col-12 text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h3 class="text-muted">No encontramos recetas</h3>
+            <p class="text-muted">
+                Intenta con diferentes ingredientes o ajusta tus preferencias.
+            </p>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Botón para generar PDF con todas las recetas -->
+    {% if recommendations %}
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <button onclick="addAllToPDF()" class="btn btn-success btn-lg">
+                <i class="fas fa-file-pdf"></i> 
+                Generar PDF con Todas las Recetas
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Vista Rápida -->
+<div class="modal fade" id="quickViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickViewTitle">Vista Rápida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quickViewContent">
+                <!-- Contenido se carga dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a href="#" class="btn btn-primary" id="quickViewFullRecipe">Ver Receta Completa</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Mostrar/ocultar sustituciones
+    function toggleSubstitutions(recipeId) {
+        const element = document.getElementById(`substitutions-${recipeId}`);
+        if (element) {
+            element.style.display = element.style.display === 'none' ? 'block' : 'none';
+        }
+    }
+    
+    // Vista rápida de receta
+    function quickView(recipeId) {
+        const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+        const title = document.getElementById('quickViewTitle');
+        const content = document.getElementById('quickViewContent');
+        const fullRecipeBtn = document.getElementById('quickViewFullRecipe');
+        
+        // Mostrar loading
+        title.textContent = 'Cargando...';
+        content.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>';
+        
+        // Actualizar enlace
+        fullRecipeBtn.href = `/recipe/${recipeId}`;
+        
+        modal.show();
+        
+        // Simular carga de datos
+        setTimeout(() => {
+            title.textContent = 'Vista Previa de Receta';
+            content.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Resumen:</h6>
+                        <p>Vista previa de la receta. Para ver todos los detalles, haz clic en "Ver Receta Completa".</p>
+                    </div>
+                </div>
+            `;
+        }, 800);
+    }
+    
+    // Mostrar recetas similares
+    function showSimilar(recipeId) {
+        alert('Función de recetas similares en desarrollo');
+    }
+    
+    // Agregar todas las recetas al PDF
+    function addAllToPDF() {
+        const recipeElements = document.querySelectorAll('.recipe-item');
+        const recipeIds = [];
+        
+        recipeElements.forEach(element => {
+            const link = element.querySelector('.card-title a');
+            if (link) {
+                const href = link.getAttribute('href');
+                const id = href.split('/').pop();
+                recipeIds.push(parseInt(id));
+            }
+        });
+        
+        if (recipeIds.length === 0) {
+            alert('No hay recetas para agregar');
+            return;
+        }
+        
+        // Agregar todas las recetas al localStorage para PDF
+        let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
+        recipeIds.forEach(id => {
+            if (!pdfList.includes(id)) {
+                pdfList.push(id);
+            }
+        });
+        localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
+        
+        if (typeof updatePDFCounter === 'function') {
+            updatePDFCounter();
+        }
+        
+        alert(`${recipeIds.length} recetas agregadas a tu lista de PDF`);
+    }
+    
+    // Función para agregar receta individual al PDF
+    function addToPDF(recipeId) {
+        let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
+        if (!pdfList.includes(recipeId)) {
+            pdfList.push(recipeId);
+            localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
+            if (typeof updatePDFCounter === 'function') {
+                updatePDFCounter();
+            }
+            alert('Receta agregada a tu lista de PDF');
+        } else {
+            alert('Esta receta ya está en tu lista de PDF');
+        }
+    }
+</script>
+{% endblock %}

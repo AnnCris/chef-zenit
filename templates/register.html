@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Registrarse - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Crear Cuenta
+                    </h3>
+                    <p class="mb-0 mt-2 opacity-75">Únete a la comunidad culinaria inteligente</p>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Mostrar errores del formulario -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6>Errores en el formulario:</h6>
+                        <ul class="mb-0">
+                            {% for field, errors in form.errors.items() %}
+                                {% for error in errors %}
+                                    <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Campo Usuario -->
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label fw-bold") }}
+                            {{ form.username(class="form-control", placeholder="Elige un nombre de usuario") }}
+                            <small class="form-text text-muted">
+                                Mínimo 4 caracteres, solo letras, números y guiones bajos
+                            </small>
+                            {% if form.username.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.username.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Campo Email -->
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label fw-bold") }}
+                            {{ form.email(class="form-control", placeholder="tu@email.com") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Campo Contraseña -->
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label fw-bold") }}
+                            {{ form.password(class="form-control", placeholder="Crea una contraseña segura") }}
+                            <small class="form-text text-muted">Mínimo 6 caracteres</small>
+                            {% if form.password.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.password.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Campo Confirmar Contraseña -->
+                        <div class="mb-3">
+                            {{ form.password2.label(class="form-label fw-bold") }}
+                            {{ form.password2(class="form-control", placeholder="Repite tu contraseña") }}
+                            {% if form.password2.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.password2.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Botón de envío - SIN JavaScript que lo bloquee -->
+                        <div class="d-grid mb-4">
+                            {{ form.submit(class="btn btn-success btn-lg") }}
+                        </div>
+                    </form>
+                    
+                    <!-- Enlaces adicionales -->
+                    <div class="text-center">
+                        <p class="mb-0">
+                            ¿Ya tienes cuenta? 
+                            <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-bold">
+                                Inicia sesión aquí
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
