@@ -6,6 +6,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 from datetime import datetime
 import os
+import re
 
 class RecipePDFGenerator:
     def __init__(self):
@@ -240,18 +241,14 @@ class RecipePDFGenerator:
         # Ingredientes
         story.append(Paragraph("Ingredientes", self.subtitle_style))
         for ingredient in recipe.ingredients:
-            # Aquí necesitaríamos acceso a la cantidad desde recipe_ingredients
-            # Por simplicidad, solo mostraremos el nombre del ingrediente
             story.append(Paragraph(f"• {ingredient.name}", self.ingredient_style))
         story.append(Spacer(1, 0.2*inch))
         
         # Instrucciones
         story.append(Paragraph("Instrucciones", self.subtitle_style))
         if recipe.instructions:
-            # Dividir instrucciones en pasos
-            from app.expert_system import CulinaryExpertSystem
-            expert_system = CulinaryExpertSystem()
-            steps = expert_system.nlp_processor.clean_recipe_instructions(recipe.instructions)
+            # Dividir instrucciones en pasos usando función simple
+            steps = self._clean_recipe_instructions_simple(recipe.instructions)
             
             for i, step in enumerate(steps, 1):
                 step_text = f"<b>{i}.</b> {step}"
@@ -269,6 +266,24 @@ class RecipePDFGenerator:
         # Consejos de cocina
         if options.get('include_tips', True):
             self._add_cooking_tips(story, recipe)
+    
+    def _clean_recipe_instructions_simple(self, instructions_text):
+        """Limpia y estructura las instrucciones de cocina de forma simple"""
+        # Separar por pasos (números, puntos, etc.)
+        steps = re.split(r'\d+[\.\)]\s*|\n\s*[-\*]\s*|\n{2,}', instructions_text)
+        
+        cleaned_steps = []
+        for step in steps:
+            step = step.strip()
+            if step and len(step) > 10:  # Filtrar pasos muy cortos
+                # Capitalizar primera letra
+                step = step[0].upper() + step[1:] if step else step
+                # Asegurar que termina con punto
+                if not step.endswith('.'):
+                    step += '.'
+                cleaned_steps.append(step)
+        
+        return cleaned_steps
     
     def _add_nutritional_info(self, story, nutrition):
         """Agregar información nutricional"""
@@ -321,12 +336,8 @@ class RecipePDFGenerator:
         story.append(Spacer(1, 0.2*inch))
     
     def _add_substitutions_info(self, story, recipe):
-        """Agregar información de sustitutos"""
-        from app.expert_system import CulinaryExpertSystem
-        expert_system = CulinaryExpertSystem()
-        
-        # Obtener sustituciones para todos los ingredientes
-        substitutions = expert_system.get_ingredient_substitutions(recipe, [])
+        """Agregar información de sustitutos usando función simple"""
+        substitutions = self._get_simple_substitutions(recipe)
         
         if substitutions:
             story.append(Paragraph("Sustitutos de Ingredientes", self.subtitle_style))
@@ -341,12 +352,47 @@ class RecipePDFGenerator:
             
             story.append(Spacer(1, 0.2*inch))
     
-    def _add_cooking_tips(self, story, recipe):
-        """Agregar consejos de cocina"""
-        from app.expert_system import CulinaryExpertSystem
-        expert_system = CulinaryExpertSystem()
+    def _get_simple_substitutions(self, recipe):
+        """Obtiene sustituciones simples sin usar expert_system"""
+        substitutions = {}
         
-        tips = expert_system.nlp_processor.generate_cooking_tips(recipe)
+        # Sustituciones básicas hardcodeadas
+        common_substitutions = {
+            'leche': [
+                {'substitute': 'leche de almendra', 'ratio': '1:1', 'notes': 'Opción sin lactosa'},
+                {'substitute': 'leche de coco', 'ratio': '1:1', 'notes': 'Sabor más cremoso'}
+            ],
+            'mantequilla': [
+                {'substitute': 'aceite de coco', 'ratio': '1:1', 'notes': 'Opción vegana'},
+                {'substitute': 'margarina', 'ratio': '1:1', 'notes': 'Sin lactosa'}
+            ],
+            'huevo': [
+                {'substitute': 'linaza molida + agua', 'ratio': '1 tbsp + 3 tbsp agua', 'notes': 'Opción vegana'},
+                {'substitute': 'aquafaba', 'ratio': '3 tbsp por huevo', 'notes': 'Líquido de garbanzos'}
+            ],
+            'azúcar': [
+                {'substitute': 'stevia', 'ratio': '1:8', 'notes': 'Mucho más dulce'},
+                {'substitute': 'miel', 'ratio': '3:4', 'notes': 'Opción natural'}
+            ],
+            'harina': [
+                {'substitute': 'harina de arroz', 'ratio': '1:1', 'notes': 'Sin gluten'},
+                {'substitute': 'harina de almendra', 'ratio': '1:1', 'notes': 'Baja en carbohidratos'}
+            ]
+        }
+        
+        # Buscar ingredientes que tengan sustitutos
+        for ingredient in recipe.ingredients:
+            ingredient_name = ingredient.name.lower()
+            for key, subs in common_substitutions.items():
+                if key in ingredient_name:
+                    substitutions[ingredient.name] = subs
+                    break
+        
+        return substitutions
+    
+    def _add_cooking_tips(self, story, recipe):
+        """Agregar consejos de cocina usando función simple"""
+        tips = self._generate_simple_cooking_tips(recipe)
         
         if tips:
             story.append(Paragraph("Consejos de Preparación", self.subtitle_style))
@@ -355,6 +401,41 @@ class RecipePDFGenerator:
                 story.append(Paragraph(f"• {tip}", self.ingredient_style))
             
             story.append(Spacer(1, 0.2*inch))
+    
+    def _generate_simple_cooking_tips(self, recipe):
+        """Genera consejos simples sin usar expert_system"""
+        tips = []
+        
+        # Consejos generales
+        tips.append("Lee toda la receta antes de empezar")
+        tips.append("Prepara todos los ingredientes antes de cocinar")
+        
+        # Consejos específicos por ingredientes
+        ingredient_names = [ing.name.lower() for ing in recipe.ingredients]
+        ingredients_text = ' '.join(ingredient_names)
+        
+        if 'ajo' in ingredients_text:
+            tips.append("Aplasta el ajo con el lado plano del cuchillo para pelarlo fácilmente")
+        
+        if 'cebolla' in ingredients_text:
+            tips.append("Refrigera la cebolla 30 minutos antes de cortarla para evitar llorar")
+        
+        if 'arroz' in ingredients_text:
+            tips.append("Lava el arroz hasta que el agua salga clara")
+        
+        if 'pollo' in ingredients_text:
+            tips.append("Asegúrate de que el pollo alcance 75°C de temperatura interna")
+        
+        if 'pasta' in ingredients_text:
+            tips.append("Agrega sal al agua cuando hierva, antes de la pasta")
+        
+        # Consejos por dificultad
+        if recipe.difficulty == 'difícil':
+            tips.append("Tómate tu tiempo y sigue cada paso cuidadosamente")
+        elif recipe.difficulty == 'fácil':
+            tips.append("Receta perfecta para principiantes")
+        
+        return tips[:5]  # Máximo 5 consejos
     
     def _add_nutritional_summary(self, story, recipes):
         """Agregar resumen nutricional de todas las recetas"""
@@ -411,52 +492,8 @@ class RecipePDFGenerator:
             
             story.append(summary_table)
             story.append(Spacer(1, 0.3*inch))
-            
-            # Recomendaciones nutricionales
-            story.append(Paragraph("Recomendaciones Nutricionales", self.subtitle_style))
-            
-            recommendations = []
-            
-            if avg_protein < 15:
-                recommendations.append("Considera agregar más fuentes de proteína a tus recetas.")
-            elif avg_protein > 25:
-                recommendations.append("Excelente contenido de proteínas en tus recetas.")
-            
-            if avg_fiber < 5:
-                recommendations.append("Intenta incluir más verduras y granos integrales para aumentar la fibra.")
-            elif avg_fiber > 8:
-                recommendations.append("Buen contenido de fibra que ayuda a la digestión.")
-            
-            if avg_calories > 600:
-                recommendations.append("Algunas recetas son altas en calorías. Considera porciones más pequeñas.")
-            elif avg_calories < 300:
-                recommendations.append("Las recetas son ligeras. Perfecto para comidas balanceadas.")
-            
-            # Balance de macronutrientes
-            total_macros = avg_protein + avg_carbs + avg_fat
-            if total_macros > 0:
-                protein_percent = (avg_protein * 4 / (avg_calories or 1)) * 100
-                carb_percent = (avg_carbs * 4 / (avg_calories or 1)) * 100
-                fat_percent = (avg_fat * 9 / (avg_calories or 1)) * 100
-                
-                if protein_percent >= 15 and protein_percent <= 25:
-                    recommendations.append("Buen balance de proteínas.")
-                if carb_percent >= 45 and carb_percent <= 65:
-                    recommendations.append("Buen balance de carbohidratos.")
-                if fat_percent >= 20 and fat_percent <= 35:
-                    recommendations.append("Buen balance de grasas.")
-            
-            for rec in recommendations:
-                story.append(Paragraph(f"• {rec}", self.normal_style))
-        
-        else:
-            story.append(Paragraph(
-                "No hay información nutricional disponible para las recetas seleccionadas.",
-                self.normal_style
-            ))
         
         # Información adicional
-        story.append(Spacer(1, 0.3*inch))
         story.append(Paragraph("Información Adicional", self.subtitle_style))
         
         additional_info = [
@@ -468,78 +505,3 @@ class RecipePDFGenerator:
         
         for info in additional_info:
             story.append(Paragraph(f"• {info}", self.normal_style))
-    
-    def generate_meal_plan_pdf(self, meal_plan, username):
-        """Generar PDF para plan de comidas semanal"""
-        # Crear directorio si no existe
-        pdf_dir = 'static/pdfs'
-        os.makedirs(pdf_dir, exist_ok=True)
-        
-        # Nombre del archivo
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"plan_semanal_{username}_{timestamp}.pdf"
-        filepath = os.path.join(pdf_dir, filename)
-        
-        # Crear documento PDF
-        doc = SimpleDocTemplate(
-            filepath,
-            pagesize=A4,
-            rightMargin=inch,
-            leftMargin=inch,
-            topMargin=inch,
-            bottomMargin=inch
-        )
-        
-        story = []
-        
-        # Título
-        story.append(Paragraph("Plan de Comidas Semanal", self.title_style))
-        story.append(Spacer(1, 0.3*inch))
-        
-        # Información del usuario
-        story.append(Paragraph(f"Generado para: <b>{username}</b>", self.normal_style))
-        story.append(Paragraph(
-            f"Fecha: {datetime.now().strftime('%d de %B de %Y')}",
-            self.normal_style
-        ))
-        story.append(Spacer(1, 0.5*inch))
-        
-        # Tabla del plan semanal
-        days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-        meals = ['Desayuno', 'Almuerzo', 'Cena']
-        
-        # Crear tabla
-        table_data = [['Día'] + meals]
-        
-        for day in days:
-            row = [day]
-            for meal in meals:
-                if day in meal_plan and meal.lower() in meal_plan[day]:
-                    recipe = meal_plan[day][meal.lower()]
-                    row.append(recipe.name if hasattr(recipe, 'name') else str(recipe))
-                else:
-                    row.append('---')
-            table_data.append(row)
-        
-        meal_table = Table(table_data, colWidths=[1*inch, 1.5*inch, 1.5*inch, 1.5*inch])
-        meal_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.darkgreen),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('BACKGROUND', (0, 1), (0, -1), colors.lightgrey),
-            ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-            ('GRID', (0, 0), (-1, -1), 1, colors.darkgreen)
-        ]))
-        
-        story.append(meal_table)
-        
-        # Generar PDF
-        try:
-            doc.build(story)
-            return filepath
-        except Exception as e:
-            print(f"Error generando PDF del plan de comidas: {e}")
-            return None
