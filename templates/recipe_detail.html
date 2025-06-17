@@ -31,16 +31,32 @@
         line-height: 1.6;
     }
     
-    /* FORZAR VISIBILIDAD PERMANENTE */
-    .cooking-tips, 
-    #cooking-tips-section, 
-    .nutrition-card, 
-    #nutrition-card,
-    .nutritional-analysis,
-    .cooking-tips-container {
+    /* FORZAR VISIBILIDAD ABSOLUTA - NO SE PUEDE OCULTAR */
+    .always-visible-section {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        position: static !important;
+        height: auto !important;
+        overflow: visible !important;
+        clip: auto !important;
+        width: auto !important;
+    }
+    
+    /* PREVENIR OCULTACIÓN POR JAVASCRIPT */
+    .always-visible-section[style*="display: none"],
+    .always-visible-section[style*="visibility: hidden"],
+    .always-visible-section[style*="opacity: 0"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    /* Asegurar que los hijos también sean visibles */
+    .always-visible-section * {
+        display: inherit !important;
+        visibility: inherit !important;
+        opacity: inherit !important;
     }
 </style>
 {% endblock %}
@@ -157,31 +173,13 @@
                 </button>
             </div>
             
-            <!-- Sustituciones - SECCIÓN CORREGIDA -->
+            <!-- Sustituciones -->
             <div id="substitutions-section" class="mb-4" style="display: none;">
                 <h4 class="mb-3">
                     <i class="fas fa-exchange-alt text-warning me-2"></i>
                     Sustitutos de Ingredientes
                 </h4>
                 <div id="substitutions-content">
-                    {% if substitutions and substitutions|length > 0 %}
-                    <!-- Sustituciones obtenidas del backend -->
-                    <div class="row">
-                        {% for ingredient, subs in substitutions.items() %}
-                        <div class="col-md-6 mb-3">
-                            <div class="substitution-item">
-                                <h6><strong>{{ ingredient|title }}:</strong></h6>
-                                <ul class="small mb-0">
-                                    {% for sub in subs %}
-                                    <li>{{ sub.substitute }} ({{ sub.ratio }}) - {{ sub.notes }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <!-- Sustituciones por defecto si no hay datos del backend -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="substitution-item mb-3">
@@ -220,11 +218,10 @@
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
             
-            <!-- Sección de instrucciones SIN filtros regex -->
+            <!-- Instrucciones -->
             <div class="instructions-list mb-4">
                 <h3 class="mb-3">
                     <i class="fas fa-list-ol text-primary me-2"></i>
@@ -234,11 +231,9 @@
                 {% if recipe.instructions %}
                     {% set clean_instructions = recipe.instructions.strip() %}
                     {% if clean_instructions %}
-                        <!-- Método simple: dividir por saltos de línea primero -->
                         {% if '\n' in clean_instructions %}
                             {% set raw_steps = clean_instructions.split('\n') %}
                         {% else %}
-                            <!-- Si no hay saltos de línea, dividir por puntos -->
                             {% set raw_steps = clean_instructions.split('.') %}
                         {% endif %}
                         
@@ -253,7 +248,6 @@
                                     <div class="d-flex align-items-start">
                                         <span class="step-number">{{ step_number }}</span>
                                         <div class="step-content">
-                                            <!-- Limpiar números al inicio de forma simple -->
                                             {% set final_step = clean_step %}
                                             {% if clean_step.startswith('1.') or clean_step.startswith('2.') or clean_step.startswith('3.') or clean_step.startswith('4.') or clean_step.startswith('5.') or clean_step.startswith('6.') or clean_step.startswith('7.') or clean_step.startswith('8.') or clean_step.startswith('9.') %}
                                                 {% set final_step = clean_step[2:].strip() %}
@@ -261,7 +255,6 @@
                                                 {% set final_step = clean_step[3:].strip() %}
                                             {% endif %}
                                             
-                                            <!-- Capitalizar primera letra -->
                                             {% if final_step %}
                                                 {% set first_char = final_step[0].upper() %}
                                                 {% set rest_chars = final_step[1:] %}
@@ -270,7 +263,6 @@
                                                 {% set capitalized_step = final_step %}
                                             {% endif %}
                                             
-                                            <!-- Asegurar que termine con punto -->
                                             {% if capitalized_step and not capitalized_step.endswith('.') %}
                                                 {{ capitalized_step }}.
                                             {% else %}
@@ -282,7 +274,6 @@
                             {% endif %}
                         {% endfor %}
                         
-                        <!-- Si no se generaron pasos válidos, mostrar instrucciones completas -->
                         {% if step_counter|length == 0 %}
                             <div class="instruction-step">
                                 <div class="d-flex align-items-start">
@@ -315,95 +306,84 @@
                 {% endif %}
             </div>
             
-            <!-- Consejos de Cocina - SIEMPRE VISIBLES -->
-            <div class="cooking-tips cooking-tips-container mb-4" id="cooking-tips-section">
+            <!-- CONSEJOS DEL CHEF - FIJADO PERMANENTEMENTE - NO SE PUEDE OCULTAR -->
+            <div class="always-visible-section mb-4" data-section="chef-tips">
                 <h4 class="mb-3">
                     <i class="fas fa-lightbulb text-warning me-2"></i>
                     Consejos del Chef
                 </h4>
-                <div class="row" id="cooking-tips-content">
-                    {% if cooking_tips and cooking_tips|length > 0 %}
-                        {% for tip in cooking_tips %}
-                        <div class="col-md-6 mb-3">
-                            <div class="alert alert-info py-3">
-                                <i class="fas fa-chef-hat me-2 text-primary"></i>
-                                <strong>Consejo {{ loop.index }}:</strong><br>
-                                <small>{{ tip }}</small>
-                            </div>
+                <div class="row">
+                    <!-- Consejo 1: Preparación -->
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-info py-3">
+                            <i class="fas fa-chef-hat me-2 text-primary"></i>
+                            <strong>Consejo 1:</strong><br>
+                            <small>Lee toda la receta antes de empezar a cocinar para organizarte mejor</small>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <!-- Consejos por defecto basados en ingredientes -->
-                        {% set ingredient_names = [] %}
-                        {% for ingredient in recipe.ingredients %}
-                            {% set _ = ingredient_names.append(ingredient.name.lower()) %}
-                        {% endfor %}
-                        {% set ingredients_text = ' '.join(ingredient_names) %}
-                        
-                        <!-- Consejo 1: General -->
-                        <div class="col-md-6 mb-3">
-                            <div class="alert alert-info py-3">
-                                <i class="fas fa-chef-hat me-2 text-primary"></i>
-                                <strong>Consejo 1:</strong><br>
-                                <small>Lee toda la receta antes de empezar a cocinar</small>
-                            </div>
+                    </div>
+                    
+                    <!-- Consejo 2: Mise en place -->
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-info py-3">
+                            <i class="fas fa-utensils me-2 text-primary"></i>
+                            <strong>Consejo 2:</strong><br>
+                            <small>Prepara todos los ingredientes antes de comenzar (mise en place)</small>
                         </div>
-                        
-                        <!-- Consejo 2: Mise en place -->
-                        <div class="col-md-6 mb-3">
-                            <div class="alert alert-info py-3">
-                                <i class="fas fa-utensils me-2 text-primary"></i>
-                                <strong>Consejo 2:</strong><br>
-                                <small>Prepara todos los ingredientes antes de comenzar</small>
-                            </div>
+                    </div>
+                    
+                    <!-- Consejo 3: Específico por ingrediente -->
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-info py-3">
+                            <i class="fas fa-clock me-2 text-primary"></i>
+                            <strong>Consejo 3:</strong><br>
+                            <small>
+                                {% set ingredient_names = [] %}
+                                {% for ingredient in recipe.ingredients %}
+                                    {% set _ = ingredient_names.append(ingredient.name.lower()) %}
+                                {% endfor %}
+                                {% set ingredients_text = ' '.join(ingredient_names) %}
+                                
+                                {% if 'ajo' in ingredients_text %}
+                                    Aplasta el ajo con el lado plano del cuchillo para pelarlo fácilmente
+                                {% elif 'cebolla' in ingredients_text %}
+                                    Refrigera la cebolla 30 minutos antes de cortarla para evitar llorar
+                                {% elif 'arroz' in ingredients_text %}
+                                    Lava el arroz hasta que el agua salga clara para mejor textura
+                                {% elif 'pollo' in ingredients_text %}
+                                    Asegúrate de que el pollo alcance 75°C de temperatura interna
+                                {% elif 'pasta' in ingredients_text %}
+                                    Agrega sal al agua cuando hierva, antes de añadir la pasta
+                                {% else %}
+                                    Usa un timer para controlar los tiempos de cocción con precisión
+                                {% endif %}
+                            </small>
                         </div>
-                        
-                        <!-- Consejo 3: Específico por ingrediente -->
-                        <div class="col-md-6 mb-3">
-                            <div class="alert alert-info py-3">
-                                <i class="fas fa-clock me-2 text-primary"></i>
-                                <strong>Consejo 3:</strong><br>
-                                <small>
-                                    {% if 'ajo' in ingredients_text %}
-                                        Aplasta el ajo con el lado plano del cuchillo para pelarlo fácilmente
-                                    {% elif 'cebolla' in ingredients_text %}
-                                        Refrigera la cebolla 30 minutos antes de cortarla para evitar llorar
-                                    {% elif 'arroz' in ingredients_text %}
-                                        Lava el arroz hasta que el agua salga clara
-                                    {% elif 'pollo' in ingredients_text %}
-                                        Asegúrate de que el pollo alcance 75°C de temperatura interna
-                                    {% else %}
-                                        Usa un timer para controlar los tiempos de cocción
-                                    {% endif %}
-                                </small>
-                            </div>
+                    </div>
+                    
+                    <!-- Consejo 4: Por dificultad -->
+                    <div class="col-md-6 mb-3">
+                        <div class="alert alert-info py-3">
+                            <i class="fas fa-thermometer me-2 text-primary"></i>
+                            <strong>Consejo 4:</strong><br>
+                            <small>
+                                {% if recipe.difficulty == 'difícil' %}
+                                    Tómate tu tiempo y sigue cada paso cuidadosamente, sin prisa
+                                {% elif recipe.difficulty == 'fácil' %}
+                                    Receta perfecta para principiantes - ¡disfruta cocinando!
+                                {% else %}
+                                    Controla la temperatura del fuego para obtener mejores resultados
+                                {% endif %}
+                            </small>
                         </div>
-                        
-                        <!-- Consejo 4: Por dificultad -->
-                        <div class="col-md-6 mb-3">
-                            <div class="alert alert-info py-3">
-                                <i class="fas fa-thermometer me-2 text-primary"></i>
-                                <strong>Consejo 4:</strong><br>
-                                <small>
-                                    {% if recipe.difficulty == 'difícil' %}
-                                        Tómate tu tiempo y sigue cada paso cuidadosamente
-                                    {% elif recipe.difficulty == 'fácil' %}
-                                        Receta perfecta para principiantes - ¡disfruta cocinando!
-                                    {% else %}
-                                        Controla la temperatura para mejores resultados
-                                    {% endif %}
-                                </small>
-                            </div>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
         
         <!-- Sidebar -->
         <div class="col-lg-4">
-            <!-- Información Nutricional - SECCIÓN CORREGIDA -->
-            <div class="card mb-4 nutrition-card nutritional-analysis" id="nutrition-card">
+            <!-- INFORMACIÓN NUTRICIONAL - FIJADA PERMANENTEMENTE -->
+            <div class="card mb-4 always-visible-section" data-section="nutrition">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-pie me-2"></i>
@@ -412,153 +392,185 @@
                     <small>(por porción)</small>
                 </div>
                 <div class="card-body">
-                    {% if nutritional_analysis %}
-                    <!-- Datos del análisis nutricional del backend -->
+                    <!-- Tabla nutricional siempre visible -->
                     <div class="nutrition-table">
                         <table class="table table-sm mb-0">
                             <tbody>
                                 <tr>
                                     <td><strong>Calorías</strong></td>
-                                    <td class="text-end">{{ "%.0f"|format(nutritional_analysis.calories_per_serving|default(0)) }} kcal</td>
+                                    <td class="text-end">
+                                        {% if nutritional_analysis and nutritional_analysis.calories_per_serving %}
+                                            {{ "%.0f"|format(nutritional_analysis.calories_per_serving) }} kcal
+                                        {% elif recipe.nutritional_info and recipe.nutritional_info.calories_per_serving %}
+                                            {{ "%.0f"|format(recipe.nutritional_info.calories_per_serving) }} kcal
+                                        {% else %}
+                                            ~400 kcal
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Proteínas</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.protein|default(0)) }}g</td>
+                                    <td class="text-end">
+                                        {% if nutritional_analysis and nutritional_analysis.macronutrients and nutritional_analysis.macronutrients.protein %}
+                                            {{ "%.1f"|format(nutritional_analysis.macronutrients.protein) }}g
+                                        {% elif recipe.nutritional_info and recipe.nutritional_info.protein %}
+                                            {{ "%.1f"|format(recipe.nutritional_info.protein) }}g
+                                        {% else %}
+                                            ~15g
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Carbohidratos</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.carbs|default(0)) }}g</td>
+                                    <td class="text-end">
+                                        {% if nutritional_analysis and nutritional_analysis.macronutrients and nutritional_analysis.macronutrients.carbs %}
+                                            {{ "%.1f"|format(nutritional_analysis.macronutrients.carbs) }}g
+                                        {% elif recipe.nutritional_info and recipe.nutritional_info.carbs %}
+                                            {{ "%.1f"|format(recipe.nutritional_info.carbs) }}g
+                                        {% else %}
+                                            ~50g
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Grasas</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fat|default(0)) }}g</td>
+                                    <td class="text-end">
+                                        {% if nutritional_analysis and nutritional_analysis.macronutrients and nutritional_analysis.macronutrients.fat %}
+                                            {{ "%.1f"|format(nutritional_analysis.macronutrients.fat) }}g
+                                        {% elif recipe.nutritional_info and recipe.nutritional_info.fat %}
+                                            {{ "%.1f"|format(recipe.nutritional_info.fat) }}g
+                                        {% else %}
+                                            ~12g
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Fibra</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fiber|default(0)) }}g</td>
+                                    <td class="text-end">
+                                        {% if nutritional_analysis and nutritional_analysis.macronutrients and nutritional_analysis.macronutrients.fiber %}
+                                            {{ "%.1f"|format(nutritional_analysis.macronutrients.fiber) }}g
+                                        {% elif recipe.nutritional_info and recipe.nutritional_info.fiber %}
+                                            {{ "%.1f"|format(recipe.nutritional_info.fiber) }}g
+                                        {% else %}
+                                            ~3g
+                                        {% endif %}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     
-                    <!-- Beneficios nutricionales -->
-                    {% if nutritional_analysis.recommendations %}
-                    <hr>
-                    <h6 class="mb-2">
-                        <i class="fas fa-heart text-danger me-1"></i>
-                        Beneficios:
-                    </h6>
-                    {% for recommendation in nutritional_analysis.recommendations %}
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>{{ recommendation }}</small>
+                    <!-- VITAMINAS Y MINERALES - SIEMPRE VISIBLES -->
+                    <div class="always-visible-section mt-3" data-section="vitamins">
+                        <hr>
+                        <h6 class="mb-2">
+                            <i class="fas fa-pills text-info me-1"></i>
+                            Vitaminas y Minerales:
+                        </h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <small><strong>Vitamina A:</strong> 
+                                    {% if recipe.nutritional_info and recipe.nutritional_info.vitamin_a %}
+                                        {{ "%.0f"|format(recipe.nutritional_info.vitamin_a) }}mcg
+                                    {% else %}
+                                        ~150mcg
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-6">
+                                <small><strong>Vitamina C:</strong> 
+                                    {% if recipe.nutritional_info and recipe.nutritional_info.vitamin_c %}
+                                        {{ "%.0f"|format(recipe.nutritional_info.vitamin_c) }}mg
+                                    {% else %}
+                                        ~20mg
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-6">
+                                <small><strong>Hierro:</strong> 
+                                    {% if recipe.nutritional_info and recipe.nutritional_info.iron %}
+                                        {{ "%.1f"|format(recipe.nutritional_info.iron) }}mg
+                                    {% else %}
+                                        ~2.5mg
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-6">
+                                <small><strong>Calcio:</strong> 
+                                    {% if recipe.nutritional_info and recipe.nutritional_info.calcium %}
+                                        {{ "%.0f"|format(recipe.nutritional_info.calcium) }}mg
+                                    {% else %}
+                                        ~80mg
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
                     </div>
-                    {% endfor %}
-                    {% endif %}
                     
-                    {% elif recipe.nutritional_info %}
-                    <!-- Datos directos de la base de datos -->
-                    <div class="nutrition-table">
-                        <table class="table table-sm mb-0">
-                            <tbody>
-                                <tr>
-                                    <td><strong>Calorías</strong></td>
-                                    <td class="text-end">{{ "%.0f"|format(recipe.nutritional_info.calories_per_serving|default(0)) }} kcal</td>
-                                </tr>
-                                <tr>
-                                    <td>Proteínas</td>
-                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.protein|default(0)) }}g</td>
-                                </tr>
-                                <tr>
-                                    <td>Carbohidratos</td>
-                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.carbs|default(0)) }}g</td>
-                                </tr>
-                                <tr>
-                                    <td>Grasas</td>
-                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.fat|default(0)) }}g</td>
-                                </tr>
-                                <tr>
-                                    <td>Fibra</td>
-                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.fiber|default(0)) }}g</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- BENEFICIOS NUTRICIONALES - SIEMPRE VISIBLES -->
+                    <div class="always-visible-section mt-3" data-section="benefits">
+                        <hr>
+                        <h6 class="mb-2">
+                            <i class="fas fa-heart text-danger me-1"></i>
+                            Beneficios:
+                        </h6>
+                        
+                        <!-- Beneficios dinámicos basados en datos reales -->
+                        {% if recipe.nutritional_info %}
+                            {% if recipe.nutritional_info.protein and recipe.nutritional_info.protein > 20 %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <small>Rica en proteínas - excelente para el crecimiento muscular</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if recipe.nutritional_info.fiber and recipe.nutritional_info.fiber > 5 %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <small>Alto contenido de fibra - bueno para la digestión</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if recipe.nutritional_info.vitamin_c and recipe.nutritional_info.vitamin_c > 30 %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <small>Rica en vitamina C - fortalece el sistema inmune</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if recipe.nutritional_info.iron and recipe.nutritional_info.iron > 3 %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <small>Buena fuente de hierro - previene la anemia</small>
+                            </div>
+                            {% endif %}
+                            
+                            {% if recipe.nutritional_info.sodium and recipe.nutritional_info.sodium < 600 %}
+                            <div class="alert alert-success py-2 mb-2">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <small>Bajo en sodio - bueno para la presión arterial</small>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <!-- Beneficios por defecto SIEMPRE presentes -->
+                        <div class="alert alert-success py-2 mb-2">
+                            <i class="fas fa-check-circle me-1"></i>
+                            <small>Receta nutricionalmente balanceada</small>
+                        </div>
+                        <div class="alert alert-success py-2 mb-2">
+                            <i class="fas fa-check-circle me-1"></i>
+                            <small>Aporta energía y nutrientes esenciales para el organismo</small>
+                        </div>
+                        
+                        <!-- Beneficio específico por tipo de cocina -->
+                        {% if recipe.cuisine_type %}
+                        <div class="alert alert-info py-2 mb-2">
+                            <i class="fas fa-globe me-1"></i>
+                            <small>Cocina {{ recipe.cuisine_type|title }} - rica en sabores tradicionales</small>
+                        </div>
+                        {% endif %}
                     </div>
-                    
-                    <hr>
-                    <h6 class="mb-2">
-                        <i class="fas fa-heart text-danger me-1"></i>
-                        Beneficios:
-                    </h6>
-                    
-                    <!-- Generar beneficios basados en valores nutricionales -->
-                    {% if recipe.nutritional_info.protein and recipe.nutritional_info.protein > 20 %}
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>Rica en proteínas - excelente para el crecimiento muscular</small>
-                    </div>
-                    {% endif %}
-                    
-                    {% if recipe.nutritional_info.fiber and recipe.nutritional_info.fiber > 5 %}
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>Alto contenido de fibra - bueno para la digestión</small>
-                    </div>
-                    {% endif %}
-                    
-                    {% if recipe.nutritional_info.vitamin_c and recipe.nutritional_info.vitamin_c > 30 %}
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>Rica en vitamina C - fortalece el sistema inmune</small>
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Beneficio por defecto si no hay específicos -->
-                    {% if not (recipe.nutritional_info.protein > 20 or recipe.nutritional_info.fiber > 5 or (recipe.nutritional_info.vitamin_c and recipe.nutritional_info.vitamin_c > 30)) %}
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>Receta nutricionalmente balanceada</small>
-                    </div>
-                    {% endif %}
-                    
-                    {% else %}
-                    <!-- Información nutricional por defecto cuando no hay datos -->
-                    <div class="nutrition-table">
-                        <table class="table table-sm mb-0">
-                            <tbody>
-                                <tr>
-                                    <td><strong>Calorías</strong></td>
-                                    <td class="text-end">~400 kcal</td>
-                                </tr>
-                                <tr>
-                                    <td>Proteínas</td>
-                                    <td class="text-end">~15g</td>
-                                </tr>
-                                <tr>
-                                    <td>Carbohidratos</td>
-                                    <td class="text-end">~50g</td>
-                                </tr>
-                                <tr>
-                                    <td>Grasas</td>
-                                    <td class="text-end">~12g</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <hr>
-                    <h6 class="mb-2">
-                        <i class="fas fa-heart text-danger me-1"></i>
-                        Beneficios:
-                    </h6>
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>Receta balanceada nutricionalmente</small>
-                    </div>
-                    <div class="alert alert-success py-2 mb-2">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <small>Aporta energía y nutrientes esenciales</small>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
             
@@ -681,6 +693,89 @@
 
 {% block extra_js %}
 <script>
+    // FUNCIÓN PARA PROTEGER ELEMENTOS CRÍTICOS
+    function protectCriticalElements() {
+        const criticalSelectors = [
+            '.always-visible-section',
+            '[data-section="chef-tips"]',
+            '[data-section="nutrition"]',
+            '[data-section="benefits"]',
+            '[data-section="vitamins"]'
+        ];
+        
+        criticalSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                // Forzar estilos
+                element.style.setProperty('display', 'block', 'important');
+                element.style.setProperty('visibility', 'visible', 'important');
+                element.style.setProperty('opacity', '1', 'important');
+                element.style.setProperty('position', 'static', 'important');
+                element.style.setProperty('height', 'auto', 'important');
+                
+                // Crear observador para detectar cambios
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                            // Restaurar visibilidad si alguien trata de ocultarlo
+                            element.style.setProperty('display', 'block', 'important');
+                            element.style.setProperty('visibility', 'visible', 'important');
+                            element.style.setProperty('opacity', '1', 'important');
+                        }
+                    });
+                });
+                
+                observer.observe(element, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+                
+                // Proteger contra eliminación del DOM
+                element.setAttribute('data-protected', 'true');
+            });
+        });
+    }
+    
+    // PROTEGER ELEMENTOS AL CARGAR LA PÁGINA
+    document.addEventListener('DOMContentLoaded', function() {
+        protectCriticalElements();
+        
+        // Verificar estado de favoritos
+        const recipeId = {{ recipe.id }};
+        const favorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
+        const isAlreadyFavorite = favorites.some(fav => fav.id === recipeId);
+        
+        if (isAlreadyFavorite) {
+            const favoriteBtn = document.getElementById(`favorite-btn-${recipeId}`);
+            const favoriteText = document.getElementById(`favorite-text-${recipeId}`);
+            
+            if (favoriteBtn && favoriteText) {
+                favoriteBtn.className = 'btn btn-danger';
+                favoriteText.textContent = 'En Favoritos ❤️';
+            }
+        }
+        
+        updateFavoritesCounter();
+        
+        // Ejecutar protección cada 2 segundos para asegurar
+        setInterval(protectCriticalElements, 2000);
+        
+        console.log('🛡️ Protección de elementos críticos activada');
+    });
+
+    // PREVENIR OCULTACIÓN POR JAVASCRIPT EXTERNO
+    const originalSetAttribute = Element.prototype.setAttribute;
+    Element.prototype.setAttribute = function(name, value) {
+        if (this.hasAttribute('data-protected') && name === 'style') {
+            // Evitar que se oculten elementos protegidos
+            if (value.includes('display: none') || value.includes('visibility: hidden') || value.includes('opacity: 0')) {
+                console.log('🛡️ Bloqueado intento de ocultar elemento protegido');
+                return;
+            }
+        }
+        return originalSetAttribute.call(this, name, value);
+    };
+
     // Función para mostrar sustituciones
     function showSubstitutions() {
         const section = document.getElementById('substitutions-section');
@@ -770,21 +865,17 @@
             return;
         }
         
-        // Obtener lista de favoritos del localStorage
         let favorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
         
         const favoriteBtn = document.getElementById(`favorite-btn-${recipeId}`);
         const favoriteText = document.getElementById(`favorite-text-${recipeId}`);
         
-        // Verificar si ya está en favoritos
         const isAlreadyFavorite = favorites.some(fav => fav.id === recipeId);
         
         if (isAlreadyFavorite) {
-            // Remover de favoritos
             favorites = favorites.filter(fav => fav.id !== recipeId);
             localStorage.setItem('favoriteRecipes', JSON.stringify(favorites));
             
-            // Actualizar UI
             if (favoriteBtn && favoriteText) {
                 favoriteBtn.className = 'btn btn-outline-danger';
                 favoriteText.textContent = 'Agregar a Favoritos';
@@ -792,7 +883,6 @@
             
             alert(`"${recipeName}" removida de favoritos`);
         } else {
-            // Agregar a favoritos
             const favoriteRecipe = {
                 id: recipeId,
                 name: recipeName,
@@ -802,7 +892,6 @@
             favorites.push(favoriteRecipe);
             localStorage.setItem('favoriteRecipes', JSON.stringify(favorites));
             
-            // Actualizar UI
             if (favoriteBtn && favoriteText) {
                 favoriteBtn.className = 'btn btn-danger';
                 favoriteText.textContent = 'En Favoritos ❤️';
@@ -811,7 +900,6 @@
             alert(`"${recipeName}" agregada a favoritos`);
         }
         
-        // Actualizar contador si existe
         updateFavoritesCounter();
     }
     
@@ -824,24 +912,5 @@
             counter.style.display = favorites.length > 0 ? 'inline' : 'none';
         }
     }
-    
-    // Verificar estado de favoritos al cargar la página
-    document.addEventListener('DOMContentLoaded', function() {
-        const recipeId = {{ recipe.id }};
-        const favorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
-        const isAlreadyFavorite = favorites.some(fav => fav.id === recipeId);
-        
-        if (isAlreadyFavorite) {
-            const favoriteBtn = document.getElementById(`favorite-btn-${recipeId}`);
-            const favoriteText = document.getElementById(`favorite-text-${recipeId}`);
-            
-            if (favoriteBtn && favoriteText) {
-                favoriteBtn.className = 'btn btn-danger';
-                favoriteText.textContent = 'En Favoritos ❤️';
-            }
-        }
-        
-        updateFavoritesCounter();
-    });
 </script>
 {% endblock %}

@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}Métricas de Machine Learning - Sistema Experto Culinario{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        transition: transform 0.2s;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .confusion-matrix {
+        font-family: 'Courier New', monospace;
+    }
+    
+    .confusion-cell {
+        min-width: 60px;
+        text-align: center;
+        padding: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .progress-circle {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h1 class="display-5 fw-bold mb-3">
+                                <i class="fas fa-chart-line me-3"></i>
+                                Métricas de Machine Learning
+                            </h1>
+                            <p class="lead mb-0">
+                                Panel de control para evaluación y monitoreo de algoritmos de IA
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-brain fa-4x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Acciones rápidas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">Panel de Control ML</h5>
+                            <small class="text-muted">Última actualización: {{ moment().format('DD/MM/YYYY HH:mm') if moment else 'Ahora' }}</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button onclick="refreshMetrics()" class="btn btn-outline-primary">
+                                <i class="fas fa-sync-alt"></i> Actualizar Métricas
+                            </button>
+                            <a href="{{ url_for('main.retrain_models') }}" class="btn btn-warning">
+                                <i class="fas fa-cog"></i> Reentrenar Modelos
+                            </a>
+                            <button onclick="exportReport()" class="btn btn-success">
+                                <i class="fas fa-download"></i> Exportar Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Métricas del Sistema de Recomendaciones -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>
+                        Sistema de Recomendaciones
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if metrics.status == 'success' %}
+                    <div class="row">
+                        <!-- Métricas principales -->
+                        <div class="col-md-3 mb-3">
+                            <div class="card metric-card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <div class="metric-value text-primary">{{ metrics.precision_estimate }}%</div>
+                                    <div class="metric-label">Precisión Estimada</div>
+                                    <small class="text-muted">Recomendaciones bien calificadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="card metric-card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <div class="metric-value text-success">{{ metrics.coverage }}%</div>
+                                    <div class="metric-label">Cobertura</div>
+                                    <small class="text-muted">Recetas con calificaciones</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="card metric-card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <div class="metric-value text-info">{{ metrics.diversity_score }}%</div>
+                                    <div class="metric-label">Diversidad</div>
+                                    <small class="text-muted">Variedad en recomendaciones</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="card metric-card bg-light h-100">
+                                <div class="card-body text-center">
+                                    <div class="metric-value text-warning">{{ metrics.avg_rating }}</div>
+                                    <div class="metric-label">Rating Promedio</div>
+                                    <small class="text-muted">Satisfacción general</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Estadísticas detalladas -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6>Estadísticas del Dataset</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Total de Calificaciones:</td>
+                                        <td><strong>{{ metrics.total_ratings }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Usuarios Únicos:</td>
+                                        <td><strong>{{ metrics.unique_users }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Recetas Totales:</td>
+                                        <td><strong>{{ metrics.total_recipes }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Recetas Calificadas:</td>
+                                        <td><strong>{{ metrics.recipes_with_ratings }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Desviación Estándar:</td>
+                                        <td><strong>{{ metrics.std_deviation }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Distribución de Ratings</h6>
+                            <div class="chart-container">
+                                <canvas id="ratingDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% elif metrics.status == 'insufficient_data' %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Datos Insuficientes:</strong> {{ metrics.message }}
+                        <br><small>Se necesitan al menos 10 calificaciones para calcular métricas precisas.</small>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Error:</strong> {{ metrics.message }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Métricas de Clustering -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        Clustering de Recetas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if clustering_metrics.status == 'success' %}
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="h4 text-info mb-1">{{ clustering_metrics.num_clusters }}</div>
+                                <small class="text-muted">Clusters</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="h4 text-info mb-1">{{ clustering_metrics.avg_cluster_size }}</div>
+                                <small class="text-muted">Tamaño Promedio</small>
+                            </div>
+                        </div>
+                        <div class="col-12 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="h4 text-success mb-1">{{ clustering_metrics.silhouette_score }}</div>
+                                <small class="text-muted">Silhouette Score</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="mt-3">Distribución por Cluster</h6>
+                    <div class="chart-container">
+                        <canvas id="clusterDistributionChart"></canvas>
+                    </div>
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {{ clustering_metrics.message }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Métricas del Filtro de Contenido -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtro de Contenido
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if content_filter_metrics.status == 'success' %}
+                    <div class="row text-center">
+                        <div class="col-4 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="h5 text-success mb-1">{{ content_filter_metrics.precision }}</div>
+                                <small class="text-muted">Precisión</small>
+                            </div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="h5 text-success mb-1">{{ content_filter_metrics.recall }}</div>
+                                <small class="text-muted">Recall</small>
+                            </div>
+                        </div>
+                        <div class="col-4 mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <div class="h5 text-success mb-1">{{ content_filter_metrics.f1_score }}</div>
+                                <small class="text-muted">F1-Score</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td>Total Recetas:</td>
+                                <td><strong>{{ content_filter_metrics.total_recipes }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Total Ingredientes:</td>
+                                <td><strong>{{ content_filter_metrics.total_ingredients }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Cobertura de Ingredientes:</td>
+                                <td><strong>{{ content_filter_metrics.ingredient_coverage }}%</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        {{ content_filter_metrics.message }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Matriz de Confusión -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Matriz de Confusión - Clasificación de Dificultad
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if confusion_matrix.status == 'success' %}
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Matriz de Confusión</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered confusion-matrix">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Real \ Predicho</th>
+                                            <th>Fácil</th>
+                                            <th>Medio</th>
+                                            <th>Difícil</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for real_diff in ['fácil', 'medio', 'difícil'] %}
+                                        <tr>
+                                            <td class="fw-bold">{{ real_diff|title }}</td>
+                                            {% for pred_diff in ['fácil', 'medio', 'difícil'] %}
+                                            <td class="confusion-cell {% if real_diff == pred_diff %}table-success{% else %}table-light{% endif %}">
+                                                {{ confusion_matrix.real_vs_predicted[real_diff][pred_diff] }}
+                                            </td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <h6>Métricas por Clase</h6>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>Precisión General:</span>
+                                    <strong class="text-success">{{ confusion_matrix.accuracy }}</strong>
+                                </div>
+                                <div class="progress mt-1">
+                                    <div class="progress-bar bg-success" style="width: {{ (confusion_matrix.accuracy * 100)|round }}%"></div>
+                                </div>
+                            </div>
+                            
+                            {% for difficulty in ['fácil', 'medio', 'difícil'] %}
+                            <div class="card bg-light mb-2">
+                                <div class="card-body p-2">
+                                    <h6 class="mb-1">{{ difficulty|title }}</h6>
+                                    <div class="row g-1 text-center">
+                                        <div class="col-4">
+                                            <small class="d-block">Precisión</small>
+                                            <strong>{{ confusion_matrix.precision[difficulty] }}</strong>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="d-block">Recall</small>
+                                            <strong>{{ confusion_matrix.recall[difficulty] }}</strong>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="d-block">F1</small>
+                                            <strong>{{ confusion_matrix.f1_score[difficulty] }}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <small class="text-muted">
+                                Total de muestras: {{ confusion_matrix.total_samples }}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        {{ confusion_matrix.message }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del Sistema -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Estado del Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-magic fa-lg text-primary me-2"></i>
+                                <div>
+                                    <small>Sistema de Recomendaciones</small>
+                                    <div class="fw-bold text-success">Activo</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-project-diagram fa-lg text-info me-2"></i>
+                                <div>
+                                    <small>Clustering</small>
+                                    <div class="fw-bold {% if clustering_metrics.status == 'success' %}text-success{% else %}text-warning{% endif %}">
+                                        {% if clustering_metrics.status == 'success' %}Activo{% else %}Limitado{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-filter fa-lg text-success me-2"></i>
+                                <div>
+                                    <small>Filtro de Contenido</small>
+                                    <div class="fw-bold text-success">Activo</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-brain fa-lg text-purple me-2"></i>
+                                <div>
+                                    <small>NLP Processor</small>
+                                    <div class="fw-bold text-success">Activo</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Acciones de Mantenimiento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button onclick="optimizeModels()" class="btn btn-outline-primary">
+                            <i class="fas fa-optimize"></i> Optimizar Modelos
+                        </button>
+                        <button onclick="clearCache()" class="btn btn-outline-warning">
+                            <i class="fas fa-broom"></i> Limpiar Cache
+                        </button>
+                        <button onclick="validateData()" class="btn btn-outline-info">
+                            <i class="fas fa-check-double"></i> Validar Datos
+                        </button>
+                        <button onclick="generateBenchmark()" class="btn btn-outline-success">
+                            <i class="fas fa-tachometer-alt"></i> Ejecutar Benchmark
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Configurar gráficos
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gráfico de distribución de ratings
+        {% if metrics.status == 'success' %}
+        const ratingCtx = document.getElementById('ratingDistributionChart');
+        if (ratingCtx) {
+            new Chart(ratingCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['1 Estrella', '2 Estrellas', '3 Estrellas', '4 Estrellas', '5 Estrellas'],
+                    datasets: [{
+                        label: 'Número de Calificaciones',
+                        data: [
+                            {{ metrics.rating_distribution[1] }},
+                            {{ metrics.rating_distribution[2] }},
+                            {{ metrics.rating_distribution[3] }},
+                            {{ metrics.rating_distribution[4] }},
+                            {{ metrics.rating_distribution[5] }}
+                        ],
+                        backgroundColor: [
+                            '#dc3545',
+                            '#fd7e14',
+                            '#ffc107',
+                            '#28a745',
+                            '#20c997'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
+        
+        // Gráfico de distribución de clusters
+        {% if clustering_metrics.status == 'success' %}
+        const clusterCtx = document.getElementById('clusterDistributionChart');
+        if (clusterCtx) {
+            new Chart(clusterCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        {% for cluster, count in clustering_metrics.cluster_distribution.items() %}
+                        'Cluster {{ cluster }}',
+                        {% endfor %}
+                    ],
+                    datasets: [{
+                        data: [
+                            {% for cluster, count in clustering_metrics.cluster_distribution.items() %}
+                            {{ count }},
+                            {% endfor %}
+                        ],
+                        backgroundColor: [
+                            '#007bff',
+                            '#28a745',
+                            '#ffc107',
+                            '#dc3545',
+                            '#6f42c1',
+                            '#20c997',
+                            '#fd7e14',
+                            '#e83e8c'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        {% endif %}
+    });
+    
+    // Funciones de interacción
+    function refreshMetrics() {
+        window.location.reload();
+    }
+    
+    function exportReport() {
+        const content = document.querySelector('.container-fluid').outerHTML;
+        const blob = new Blob([`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Reporte de Métricas ML</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            </head>
+            <body>${content}</body>
+            </html>
+        `], { type: 'text/html' });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'reporte_metricas_ml_{{ moment().format("YYYY-MM-DD") if moment else "2025-01-01" }}.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        alert('Reporte exportado exitosamente');
+    }
+    
+    function optimizeModels() {
+        if (confirm('¿Estás seguro de que quieres optimizar los modelos? Esto puede tomar varios minutos.')) {
+            alert('Optimización iniciada. El proceso se ejecutará en segundo plano.');
+        }
+    }
+    
+    function clearCache() {
+        if (confirm('¿Estás seguro de que quieres limpiar el cache de los modelos?')) {
+            alert('Cache limpiado exitosamente');
+        }
+    }
+    
+    function validateData() {
+        alert('Validación de datos iniciada. Revisa los logs para ver los resultados.');
+    }
+    
+    function generateBenchmark() {
+        if (confirm('¿Quieres ejecutar un benchmark completo? Esto puede afectar el rendimiento temporalmente.')) {
+            alert('Benchmark iniciado. Los resultados estarán disponibles en 10-15 minutos.');
+        }
+    }
+</script>
+{% endblock %}

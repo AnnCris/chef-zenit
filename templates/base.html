@@ -1,353 +1,486 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Sistema Experto Culinario{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+
     <style>
-        .navbar-brand {
-            font-weight: bold;
-            color: #28a745 !important;
-        }
-        
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4rem 0;
-        }
-        
-        .recipe-card {
-            transition: transform 0.2s;
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .recipe-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        }
-        
-        .rating-stars {
-            color: #ffc107;
-        }
-        
-        .difficulty-easy { color: #28a745; }
-        .difficulty-medio { color: #ffc107; }
-        .difficulty-difícil { color: #dc3545; }
-        
-        .footer {
-            background-color: #343a40;
-            color: white;
-            margin-top: 3rem;
-        }
-        
-        .sidebar {
-            background-color: #f8f9fa;
-            min-height: calc(100vh - 56px);
-        }
-        
-        .nutrition-badge {
-            font-size: 0.8rem;
-            margin: 2px;
-        }
+      .navbar-brand {
+        font-weight: bold;
+        color: #28a745 !important;
+      }
+
+      .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4rem 0;
+      }
+
+      .recipe-card {
+        transition: transform 0.2s;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .rating-stars {
+        color: #ffc107;
+      }
+
+      .difficulty-easy {
+        color: #28a745;
+      }
+      .difficulty-medio {
+        color: #ffc107;
+      }
+      .difficulty-difícil {
+        color: #dc3545;
+      }
+
+      .footer {
+        background-color: #343a40;
+        color: white;
+        margin-top: 3rem;
+      }
+
+      .sidebar {
+        background-color: #f8f9fa;
+        min-height: calc(100vh - 56px);
+      }
+
+      .nutrition-badge {
+        font-size: 0.8rem;
+        margin: 2px;
+      }
     </style>
-    
+
     {% block extra_css %}{% endblock %}
-</head>
-<body>
+  </head>
+  <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                <i class="fas fa-utensils"></i> Sistema Experto Culinario
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.index') }}">
-                            <i class="fas fa-home"></i> Inicio
-                        </a>
-                    </li>
-                    
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.advanced_search') }}">
-                            <i class="fas fa-search"></i> Búsqueda Avanzada
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.nutrition_guide') }}">
-                            <i class="fas fa-apple-alt"></i> Guía Nutricional
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.cooking_assistant') }}">
-                            <i class="fas fa-robot"></i> Asistente
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-                
-                <ul class="navbar-nav">
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ current_user.username }}
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ url_for('main.user_preferences') }}">
-                                <i class="fas fa-cog"></i> Preferencias
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('main.my_recipes') }}">
-                                <i class="fas fa-heart"></i> Mis Recetas
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
-                                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                            </a></li>
-                        </ul>
-                    </li>
-                    {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.login') }}">
-                            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.register') }}">
-                            <i class="fas fa-user-plus"></i> Registrarse
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('main.index') }}">
+          <i class="fas fa-utensils"></i> Sistema Experto Culinario
+        </a>
+
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- SECCIÓN DE NAVEGACIÓN SIN VERIFICACIÓN DE ADMIN - REEMPLAZAR EN base.html -->
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.index') }}">
+                <i class="fas fa-home"></i> Inicio
+              </a>
+            </li>
+
+            {% if current_user.is_authenticated %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.advanced_search') }}">
+                <i class="fas fa-search"></i> Búsqueda Avanzada
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('main.nutrition_guide') }}">
+                <i class="fas fa-apple-alt"></i> Guía Nutricional
+              </a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link"
+                href="{{ url_for('main.cooking_assistant') }}"
+              >
+                <i class="fas fa-robot"></i> Asistente
+              </a>
+            </li>
+
+            <!-- SECCIÓN DE MÉTRICAS ML PARA TODOS LOS USUARIOS LOGUEADOS -->
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle text-info"
+                href="#"
+                id="metricsDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fas fa-chart-line"></i> Métricas
+              </a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('main.ml_metrics') }}"
+                  >
+                    <i class="fas fa-chart-pie text-primary"></i> Métricas del
+                    Sistema
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('main.retrain_models') }}"
+                  >
+                    <i class="fas fa-sync-alt text-warning"></i> Reentrenar
+                    Modelos
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('main.train_models') }}"
+                  >
+                    <i class="fas fa-brain text-info"></i> Entrenar Sistema
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% endif %}
+          </ul>
+
+          <ul class="navbar-nav">
+            {% if current_user.is_authenticated %}
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fas fa-user"></i> {{ current_user.username }}
+              </a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('main.user_preferences') }}"
+                  >
+                    <i class="fas fa-cog"></i> Preferencias
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('main.my_recipes') }}"
+                  >
+                    <i class="fas fa-heart"></i> Mis Recetas
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('main.ml_metrics') }}"
+                  >
+                    <i class="fas fa-chart-line text-info"></i> Ver Métricas ML
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.login') }}">
+                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('auth.register') }}">
+                <i class="fas fa-user-plus"></i> Registrarse
+              </a>
+            </li>
+            {% endif %}
+          </ul>
         </div>
+      </div>
     </nav>
 
     <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="container mt-3">
-            {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    {% endwith %}
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+      <div
+        class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'info' }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
 
     <!-- Main Content -->
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+    <main>{% block content %}{% endblock %}</main>
 
     <!-- Footer -->
     <footer class="footer py-4">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5><i class="fas fa-utensils"></i> Sistema Experto Culinario</h5>
-                    <p>Tu asistente inteligente para cocinar de manera saludable y deliciosa.</p>
-                </div>
-                <div class="col-md-3">
-                    <h6>Enlaces Útiles</h6>
-                    <ul class="list-unstyled">
-                        <li><a href="{{ url_for('main.nutrition_guide') }}" class="text-light">Guía Nutricional</a></li>
-                        <li><a href="{{ url_for('main.recipe_of_the_day') }}" class="text-light">Receta del Día</a></li>
-                        <li><a href="{{ url_for('main.advanced_search') }}" class="text-light">Búsqueda Avanzada</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <h6>Características</h6>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-brain"></i> Inteligencia Artificial</li>
-                        <li><i class="fas fa-chart-pie"></i> Análisis Nutricional</li>
-                        <li><i class="fas fa-exchange-alt"></i> Sustitutos de Ingredientes</li>
-                        <li><i class="fas fa-file-pdf"></i> Exportar a PDF</li>
-                    </ul>
-                </div>
-            </div>
-            <hr class="my-3">
-            <div class="row">
-                <div class="col-md-6">
-                    <small>&copy; 2025 Sistema Experto Culinario. Todos los derechos reservados.</small>
-                </div>
-                <div class="col-md-6 text-end">
-                    <small>Desarrollado con Flask, Machine Learning y amor por la cocina.</small>
-                </div>
-            </div>
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">
+            <h5><i class="fas fa-utensils"></i> Sistema Experto Culinario</h5>
+            <p>
+              Tu asistente inteligente para cocinar de manera saludable y
+              deliciosa.
+            </p>
+          </div>
+          <div class="col-md-3">
+            <h6>Enlaces Útiles</h6>
+            <ul class="list-unstyled">
+              <li>
+                <a
+                  href="{{ url_for('main.nutrition_guide') }}"
+                  class="text-light"
+                  >Guía Nutricional</a
+                >
+              </li>
+              <li>
+                <a
+                  href="{{ url_for('main.recipe_of_the_day') }}"
+                  class="text-light"
+                  >Receta del Día</a
+                >
+              </li>
+              <li>
+                <a
+                  href="{{ url_for('main.advanced_search') }}"
+                  class="text-light"
+                  >Búsqueda Avanzada</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-3">
+            <h6>Características</h6>
+            <ul class="list-unstyled">
+              <li><i class="fas fa-brain"></i> Inteligencia Artificial</li>
+              <li><i class="fas fa-chart-pie"></i> Análisis Nutricional</li>
+              <li>
+                <i class="fas fa-exchange-alt"></i> Sustitutos de Ingredientes
+              </li>
+              <li><i class="fas fa-file-pdf"></i> Exportar a PDF</li>
+            </ul>
+          </div>
         </div>
+        <hr class="my-3" />
+        <div class="row">
+          <div class="col-md-6">
+            <small
+              >&copy; 2025 Sistema Experto Culinario. Todos los derechos
+              reservados.</small
+            >
+          </div>
+          <div class="col-md-6 text-end">
+            <small
+              >Desarrollado con Flask, Machine Learning y amor por la
+              cocina.</small
+            >
+          </div>
+        </div>
+      </div>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Custom JS -->
     <script>
-        // Función para mostrar/ocultar información nutricional
-        function toggleNutrition(recipeId) {
-            const nutritionDiv = document.getElementById('nutrition-' + recipeId);
-            if (nutritionDiv) {
-                nutritionDiv.style.display = nutritionDiv.style.display === 'none' ? 'block' : 'none';
-            }
+      // Función para mostrar/ocultar información nutricional
+      function toggleNutrition(recipeId) {
+        const nutritionDiv = document.getElementById("nutrition-" + recipeId);
+        if (nutritionDiv) {
+          nutritionDiv.style.display =
+            nutritionDiv.style.display === "none" ? "block" : "none";
         }
-        
-        // Función para agregar receta a lista de PDFs
-        function addToPDF(recipeId) {
-            let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
-            if (!pdfList.includes(recipeId)) {
-                pdfList.push(recipeId);
-                localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
-                updatePDFCounter();
-                showToast('Receta agregada a tu lista de PDF');
-            } else {
-                showToast('Esta receta ya está en tu lista de PDF', 'warning');
-            }
+      }
+
+      // Función para agregar receta a lista de PDFs
+      function addToPDF(recipeId) {
+        let pdfList = JSON.parse(localStorage.getItem("pdfRecipes") || "[]");
+        if (!pdfList.includes(recipeId)) {
+          pdfList.push(recipeId);
+          localStorage.setItem("pdfRecipes", JSON.stringify(pdfList));
+          updatePDFCounter();
+          showToast("Receta agregada a tu lista de PDF");
+        } else {
+          showToast("Esta receta ya está en tu lista de PDF", "warning");
         }
-        
-        // Actualizar contador de recetas para PDF
-        function updatePDFCounter() {
-            const pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
-            const counter = document.getElementById('pdf-counter');
-            if (counter) {
-                counter.textContent = pdfList.length;
-                counter.style.display = pdfList.length > 0 ? 'inline' : 'none';
-            }
+      }
+
+      // Actualizar contador de recetas para PDF
+      function updatePDFCounter() {
+        const pdfList = JSON.parse(localStorage.getItem("pdfRecipes") || "[]");
+        const counter = document.getElementById("pdf-counter");
+        if (counter) {
+          counter.textContent = pdfList.length;
+          counter.style.display = pdfList.length > 0 ? "inline" : "none";
         }
-        
-        // Mostrar toast notification
-        function showToast(message, type = 'success') {
-            const toastContainer = document.getElementById('toast-container') || createToastContainer();
-            const toast = document.createElement('div');
-            toast.className = `toast align-items-center text-white bg-${type} border-0`;
-            toast.setAttribute('role', 'alert');
-            toast.innerHTML = `
+      }
+
+      // Mostrar toast notification
+      function showToast(message, type = "success") {
+        const toastContainer =
+          document.getElementById("toast-container") || createToastContainer();
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute("role", "alert");
+        toast.innerHTML = `
                 <div class="d-flex">
                     <div class="toast-body">${message}</div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>
             `;
-            toastContainer.appendChild(toast);
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
-            
-            // Remover toast después de que se oculte
-            toast.addEventListener('hidden.bs.toast', () => {
-                toastContainer.removeChild(toast);
-            });
-        }
-        
-        // Crear contenedor de toasts si no existe
-        function createToastContainer() {
-            const container = document.createElement('div');
-            container.id = 'toast-container';
-            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-            container.style.zIndex = '1055';
-            document.body.appendChild(container);
-            return container;
-        }
-        
-        // Inicializar al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            updatePDFCounter();
-            
-            // Auto-hide alerts after 5 seconds
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                setTimeout(() => {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }, 5000);
-            });
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        // Remover toast después de que se oculte
+        toast.addEventListener("hidden.bs.toast", () => {
+          toastContainer.removeChild(toast);
         });
-        
-        // Función para buscar ingredientes con autocompletado
-        function setupIngredientAutocomplete(inputId) {
-            const input = document.getElementById(inputId);
-            if (!input) return;
-            
-            let timeout;
-            input.addEventListener('input', function() {
-                clearTimeout(timeout);
-                const query = this.value;
-                
-                if (query.length < 2) return;
-                
-                timeout = setTimeout(() => {
-                    fetch(`/ingredient_suggestions?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(suggestions => {
-                            showSuggestions(input, suggestions);
-                        })
-                        .catch(error => console.error('Error:', error));
-                }, 300);
-            });
+      }
+
+      // Crear contenedor de toasts si no existe
+      function createToastContainer() {
+        const container = document.createElement("div");
+        container.id = "toast-container";
+        container.className =
+          "toast-container position-fixed bottom-0 end-0 p-3";
+        container.style.zIndex = "1055";
+        document.body.appendChild(container);
+        return container;
+      }
+
+      // Inicializar al cargar la página
+      document.addEventListener("DOMContentLoaded", function () {
+        updatePDFCounter();
+
+        // Auto-hide alerts after 5 seconds
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach((alert) => {
+          setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+          }, 5000);
+        });
+      });
+
+      // Función para buscar ingredientes con autocompletado
+      function setupIngredientAutocomplete(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        let timeout;
+        input.addEventListener("input", function () {
+          clearTimeout(timeout);
+          const query = this.value;
+
+          if (query.length < 2) return;
+
+          timeout = setTimeout(() => {
+            fetch(`/ingredient_suggestions?q=${encodeURIComponent(query)}`)
+              .then((response) => response.json())
+              .then((suggestions) => {
+                showSuggestions(input, suggestions);
+              })
+              .catch((error) => console.error("Error:", error));
+          }, 300);
+        });
+      }
+
+      // Mostrar sugerencias de ingredientes
+      function showSuggestions(input, suggestions) {
+        // Remover sugerencias previas
+        const existingSuggestions = document.querySelector(
+          ".ingredient-suggestions"
+        );
+        if (existingSuggestions) {
+          existingSuggestions.remove();
         }
-        
-        // Mostrar sugerencias de ingredientes
-        function showSuggestions(input, suggestions) {
-            // Remover sugerencias previas
-            const existingSuggestions = document.querySelector('.ingredient-suggestions');
-            if (existingSuggestions) {
-                existingSuggestions.remove();
+
+        if (suggestions.length === 0) return;
+
+        const suggestionsDiv = document.createElement("div");
+        suggestionsDiv.className =
+          "ingredient-suggestions list-group position-absolute";
+        suggestionsDiv.style.zIndex = "1000";
+        suggestionsDiv.style.width = input.offsetWidth + "px";
+
+        suggestions.forEach((suggestion) => {
+          const item = document.createElement("button");
+          item.className = "list-group-item list-group-item-action";
+          item.textContent = suggestion.name;
+          item.addEventListener("click", function () {
+            const currentValue = input.value;
+            const lastComma = currentValue.lastIndexOf(",");
+            if (lastComma !== -1) {
+              input.value =
+                currentValue.substring(0, lastComma + 1) +
+                " " +
+                suggestion.name;
+            } else {
+              input.value = suggestion.name;
             }
-            
-            if (suggestions.length === 0) return;
-            
-            const suggestionsDiv = document.createElement('div');
-            suggestionsDiv.className = 'ingredient-suggestions list-group position-absolute';
-            suggestionsDiv.style.zIndex = '1000';
-            suggestionsDiv.style.width = input.offsetWidth + 'px';
-            
-            suggestions.forEach(suggestion => {
-                const item = document.createElement('button');
-                item.className = 'list-group-item list-group-item-action';
-                item.textContent = suggestion.name;
-                item.addEventListener('click', function() {
-                    const currentValue = input.value;
-                    const lastComma = currentValue.lastIndexOf(',');
-                    if (lastComma !== -1) {
-                        input.value = currentValue.substring(0, lastComma + 1) + ' ' + suggestion.name;
-                    } else {
-                        input.value = suggestion.name;
-                    }
-                    suggestionsDiv.remove();
-                });
-                suggestionsDiv.appendChild(item);
-            });
-            
-            // Posicionar sugerencias debajo del input
-            input.parentNode.style.position = 'relative';
-            input.parentNode.appendChild(suggestionsDiv);
-            
-            // Cerrar sugerencias al hacer click fuera
-            document.addEventListener('click', function closeSuggestions(e) {
-                if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
-                    suggestionsDiv.remove();
-                    document.removeEventListener('click', closeSuggestions);
-                }
-            });
-        }
+            suggestionsDiv.remove();
+          });
+          suggestionsDiv.appendChild(item);
+        });
+
+        // Posicionar sugerencias debajo del input
+        input.parentNode.style.position = "relative";
+        input.parentNode.appendChild(suggestionsDiv);
+
+        // Cerrar sugerencias al hacer click fuera
+        document.addEventListener("click", function closeSuggestions(e) {
+          if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+            suggestionsDiv.remove();
+            document.removeEventListener("click", closeSuggestions);
+          }
+        });
+      }
     </script>
-    
+
     {% block extra_js %}{% endblock %}
-</body>
+  </body>
 </html>
