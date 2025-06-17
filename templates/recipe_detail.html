@@ -157,13 +157,31 @@
                 </button>
             </div>
             
-            <!-- Sustituciones -->
+            <!-- Sustituciones - SECCIÓN CORREGIDA -->
             <div id="substitutions-section" class="mb-4" style="display: none;">
                 <h4 class="mb-3">
                     <i class="fas fa-exchange-alt text-warning me-2"></i>
                     Sustitutos de Ingredientes
                 </h4>
                 <div id="substitutions-content">
+                    {% if substitutions and substitutions|length > 0 %}
+                    <!-- Sustituciones obtenidas del backend -->
+                    <div class="row">
+                        {% for ingredient, subs in substitutions.items() %}
+                        <div class="col-md-6 mb-3">
+                            <div class="substitution-item">
+                                <h6><strong>{{ ingredient|title }}:</strong></h6>
+                                <ul class="small mb-0">
+                                    {% for sub in subs %}
+                                    <li>{{ sub.substitute }} ({{ sub.ratio }}) - {{ sub.notes }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <!-- Sustituciones por defecto si no hay datos del backend -->
                     <div class="row">
                         <div class="col-md-6">
                             <div class="substitution-item mb-3">
@@ -202,6 +220,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -383,7 +402,7 @@
         
         <!-- Sidebar -->
         <div class="col-lg-4">
-            <!-- Información Nutricional - SIEMPRE VISIBLE -->
+            <!-- Información Nutricional - SECCIÓN CORREGIDA -->
             <div class="card mb-4 nutrition-card nutritional-analysis" id="nutrition-card">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
@@ -394,28 +413,29 @@
                 </div>
                 <div class="card-body">
                     {% if nutritional_analysis %}
+                    <!-- Datos del análisis nutricional del backend -->
                     <div class="nutrition-table">
                         <table class="table table-sm mb-0">
                             <tbody>
                                 <tr>
                                     <td><strong>Calorías</strong></td>
-                                    <td class="text-end">{{ "%.0f"|format(nutritional_analysis.calories_per_serving or 0) }} kcal</td>
+                                    <td class="text-end">{{ "%.0f"|format(nutritional_analysis.calories_per_serving|default(0)) }} kcal</td>
                                 </tr>
                                 <tr>
                                     <td>Proteínas</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.protein or 0) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.protein|default(0)) }}g</td>
                                 </tr>
                                 <tr>
                                     <td>Carbohidratos</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.carbs or 0) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.carbs|default(0)) }}g</td>
                                 </tr>
                                 <tr>
                                     <td>Grasas</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fat or 0) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fat|default(0)) }}g</td>
                                 </tr>
                                 <tr>
                                     <td>Fibra</td>
-                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fiber or 0) }}g</td>
+                                    <td class="text-end">{{ "%.1f"|format(nutritional_analysis.macronutrients.fiber|default(0)) }}g</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -436,8 +456,73 @@
                     {% endfor %}
                     {% endif %}
                     
+                    {% elif recipe.nutritional_info %}
+                    <!-- Datos directos de la base de datos -->
+                    <div class="nutrition-table">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Calorías</strong></td>
+                                    <td class="text-end">{{ "%.0f"|format(recipe.nutritional_info.calories_per_serving|default(0)) }} kcal</td>
+                                </tr>
+                                <tr>
+                                    <td>Proteínas</td>
+                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.protein|default(0)) }}g</td>
+                                </tr>
+                                <tr>
+                                    <td>Carbohidratos</td>
+                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.carbs|default(0)) }}g</td>
+                                </tr>
+                                <tr>
+                                    <td>Grasas</td>
+                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.fat|default(0)) }}g</td>
+                                </tr>
+                                <tr>
+                                    <td>Fibra</td>
+                                    <td class="text-end">{{ "%.1f"|format(recipe.nutritional_info.fiber|default(0)) }}g</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="mb-2">
+                        <i class="fas fa-heart text-danger me-1"></i>
+                        Beneficios:
+                    </h6>
+                    
+                    <!-- Generar beneficios basados en valores nutricionales -->
+                    {% if recipe.nutritional_info.protein and recipe.nutritional_info.protein > 20 %}
+                    <div class="alert alert-success py-2 mb-2">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <small>Rica en proteínas - excelente para el crecimiento muscular</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if recipe.nutritional_info.fiber and recipe.nutritional_info.fiber > 5 %}
+                    <div class="alert alert-success py-2 mb-2">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <small>Alto contenido de fibra - bueno para la digestión</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if recipe.nutritional_info.vitamin_c and recipe.nutritional_info.vitamin_c > 30 %}
+                    <div class="alert alert-success py-2 mb-2">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <small>Rica en vitamina C - fortalece el sistema inmune</small>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Beneficio por defecto si no hay específicos -->
+                    {% if not (recipe.nutritional_info.protein > 20 or recipe.nutritional_info.fiber > 5 or (recipe.nutritional_info.vitamin_c and recipe.nutritional_info.vitamin_c > 30)) %}
+                    <div class="alert alert-success py-2 mb-2">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <small>Receta nutricionalmente balanceada</small>
+                    </div>
+                    {% endif %}
+                    
                     {% else %}
-                    <!-- Información nutricional por defecto -->
+                    <!-- Información nutricional por defecto cuando no hay datos -->
                     <div class="nutrition-table">
                         <table class="table table-sm mb-0">
                             <tbody>
@@ -540,10 +625,13 @@
                             <i class="fas fa-shopping-cart"></i> Lista de Compras
                         </button>
                         {% if current_user.is_authenticated %}
-                        <button onclick="saveToFavorites({{ recipe.id }})" class="btn btn-outline-danger">
-                            <i class="fas fa-heart"></i> Guardar Favorito
+                        <button onclick="saveToFavorites({{ recipe.id }}, '{{ recipe.name }}')" class="btn btn-outline-danger" id="favorite-btn-{{ recipe.id }}">
+                            <i class="fas fa-heart"></i> <span id="favorite-text-{{ recipe.id }}">Agregar a Favoritos</span>
                         </button>
                         {% endif %}
+                        <button onclick="shareRecipe()" class="btn btn-outline-info">
+                            <i class="fas fa-share"></i> Compartir Receta
+                        </button>
                     </div>
                 </div>
             </div>
@@ -660,11 +748,6 @@
         alert('Lista de compras descargada');
     }
     
-    // Función para guardar en favoritos
-    function saveToFavorites(recipeId) {
-        alert('Funcionalidad de favoritos en desarrollo');
-    }
-    
     // Función para agregar a PDF
     function addToPDF(recipeId) {
         let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
@@ -680,139 +763,85 @@
         }
     }
     
-    // FUNCIÓN PRINCIPAL PARA ASEGURAR VISIBILIDAD PERMANENTE
-    function forceElementsVisibility() {
-        // Lista de elementos que deben estar siempre visibles
-        const elementsToShow = [
-            '#cooking-tips-section',
-            '#nutrition-card',
-            '.cooking-tips',
-            '.nutrition-card',
-            '.nutritional-analysis',
-            '.cooking-tips-container',
-            '#cooking-tips-content'
-        ];
+    // Función mejorada para guardar en favoritos
+    function saveToFavorites(recipeId, recipeName) {
+        if (!recipeId || !recipeName) {
+            alert('Error: Datos de receta inválidos');
+            return;
+        }
         
-        elementsToShow.forEach(selector => {
-            const elements = document.querySelectorAll(selector);
-            elements.forEach(element => {
-                if (element) {
-                    // Forzar visibilidad con máxima prioridad
-                    element.style.setProperty('display', 'block', 'important');
-                    element.style.setProperty('visibility', 'visible', 'important');
-                    element.style.setProperty('opacity', '1', 'important');
-                    element.style.setProperty('height', 'auto', 'important');
-                    element.style.setProperty('overflow', 'visible', 'important');
-                    
-                    // Remover clases que puedan ocultar
-                    element.classList.remove('d-none', 'hidden', 'hide', 'invisible');
-                    
-                    // Agregar clases de visibilidad
-                    element.classList.add('d-block', 'visible');
-                }
-            });
-        });
+        // Obtener lista de favoritos del localStorage
+        let favorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
+        
+        const favoriteBtn = document.getElementById(`favorite-btn-${recipeId}`);
+        const favoriteText = document.getElementById(`favorite-text-${recipeId}`);
+        
+        // Verificar si ya está en favoritos
+        const isAlreadyFavorite = favorites.some(fav => fav.id === recipeId);
+        
+        if (isAlreadyFavorite) {
+            // Remover de favoritos
+            favorites = favorites.filter(fav => fav.id !== recipeId);
+            localStorage.setItem('favoriteRecipes', JSON.stringify(favorites));
+            
+            // Actualizar UI
+            if (favoriteBtn && favoriteText) {
+                favoriteBtn.className = 'btn btn-outline-danger';
+                favoriteText.textContent = 'Agregar a Favoritos';
+            }
+            
+            alert(`"${recipeName}" removida de favoritos`);
+        } else {
+            // Agregar a favoritos
+            const favoriteRecipe = {
+                id: recipeId,
+                name: recipeName,
+                addedAt: new Date().toISOString()
+            };
+            
+            favorites.push(favoriteRecipe);
+            localStorage.setItem('favoriteRecipes', JSON.stringify(favorites));
+            
+            // Actualizar UI
+            if (favoriteBtn && favoriteText) {
+                favoriteBtn.className = 'btn btn-danger';
+                favoriteText.textContent = 'En Favoritos ❤️';
+            }
+            
+            alert(`"${recipeName}" agregada a favoritos`);
+        }
+        
+        // Actualizar contador si existe
+        updateFavoritesCounter();
     }
     
-    // EJECUTAR INMEDIATAMENTE AL CARGAR
+    // Función para actualizar contador de favoritos
+    function updateFavoritesCounter() {
+        const favorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
+        const counter = document.getElementById('favorites-counter');
+        if (counter) {
+            counter.textContent = favorites.length;
+            counter.style.display = favorites.length > 0 ? 'inline' : 'none';
+        }
+    }
+    
+    // Verificar estado de favoritos al cargar la página
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔧 Iniciando corrección de visibilidad...');
+        const recipeId = {{ recipe.id }};
+        const favorites = JSON.parse(localStorage.getItem('favoriteRecipes') || '[]');
+        const isAlreadyFavorite = favorites.some(fav => fav.id === recipeId);
         
-        // Aplicar inmediatamente
-        forceElementsVisibility();
-        
-        // Verificar que los elementos existen
-        const cookingTips = document.getElementById('cooking-tips-section');
-        const nutritionCard = document.getElementById('nutrition-card');
-        
-        console.log('📋 Cooking tips elemento:', cookingTips ? 'ENCONTRADO' : 'NO ENCONTRADO');
-        console.log('🍎 Nutrition card elemento:', nutritionCard ? 'ENCONTRADO' : 'NO ENCONTRADO');
-        
-        // Aplicar cada 500ms durante los primeros 10 segundos
-        let attempts = 0;
-        const maxAttempts = 20; // 10 segundos
-        
-        const intervalId = setInterval(() => {
-            attempts++;
-            console.log(`🔄 Aplicando visibilidad - intento ${attempts}`);
-            forceElementsVisibility();
+        if (isAlreadyFavorite) {
+            const favoriteBtn = document.getElementById(`favorite-btn-${recipeId}`);
+            const favoriteText = document.getElementById(`favorite-text-${recipeId}`);
             
-            if (attempts >= maxAttempts) {
-                clearInterval(intervalId);
-                console.log('✅ Finalizado - elementos deben estar visibles permanentemente');
+            if (favoriteBtn && favoriteText) {
+                favoriteBtn.className = 'btn btn-danger';
+                favoriteText.textContent = 'En Favoritos ❤️';
             }
-        }, 500);
+        }
         
-        // También aplicar en eventos importantes
-        window.addEventListener('scroll', forceElementsVisibility);
-        window.addEventListener('resize', forceElementsVisibility);
-        document.addEventListener('click', forceElementsVisibility);
-        
-        // Crear observer para detectar cambios en el DOM
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'attributes' || mutation.type === 'childList') {
-                    forceElementsVisibility();
-                }
-            });
-        });
-        
-        // Observar cambios en el body
-        observer.observe(document.body, {
-            attributes: true,
-            childList: true,
-            subtree: true,
-            attributeFilter: ['style', 'class']
-        });
-        
-        // Aplicar cada 2 segundos permanentemente
-        setInterval(forceElementsVisibility, 2000);
-        
-        console.log('✅ Sistema de visibilidad permanente activado');
+        updateFavoritesCounter();
     });
-    
-    // APLICAR TAMBIÉN EN WINDOW LOAD COMO BACKUP
-    window.addEventListener('load', function() {
-        setTimeout(forceElementsVisibility, 100);
-        setTimeout(forceElementsVisibility, 500);
-        setTimeout(forceElementsVisibility, 1000);
-    });
-    
-    // CSS ADICIONAL INYECTADO VIA JAVASCRIPT
-    const additionalCSS = `
-        <style id="force-visibility-css">
-            /* REGLAS CSS CON MÁXIMA ESPECIFICIDAD */
-            #cooking-tips-section,
-            .cooking-tips,
-            .cooking-tips-container,
-            #nutrition-card,
-            .nutrition-card,
-            .nutritional-analysis {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                height: auto !important;
-                overflow: visible !important;
-            }
-            
-            #cooking-tips-section *,
-            .cooking-tips *,
-            #nutrition-card *,
-            .nutrition-card * {
-                visibility: visible !important;
-            }
-            
-            /* Prevenir ocultamiento accidental */
-            .d-none.cooking-tips,
-            .d-none.nutrition-card,
-            .hidden.cooking-tips,
-            .hidden.nutrition-card {
-                display: block !important;
-            }
-        </style>
-    `;
-    
-    // Inyectar CSS adicional
-    document.head.insertAdjacentHTML('beforeend', additionalCSS);
 </script>
 {% endblock %}

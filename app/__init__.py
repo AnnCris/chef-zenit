@@ -1,4 +1,4 @@
-# app/__init__.py - VERSIÓN CON FILTROS REGEX AÑADIDOS
+# app/__init__.py - VERSIÓN CORREGIDA SIN FILTROS REGEX PROBLEMÁTICOS
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -6,7 +6,6 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 import nltk
 import os
-import re
 
 def create_app():
     app = Flask(__name__, 
@@ -32,38 +31,38 @@ def create_app():
         from app.models import User
         return User.query.get(int(user_id))
     
-    # ✅ AGREGAR FILTROS PERSONALIZADOS PARA JINJA2
-    @app.template_filter('regex_search')
-    def regex_search_filter(text, pattern):
-        """Busca un patrón regex en el texto"""
+    # ✅ FILTROS SIMPLES Y SEGUROS PARA JINJA2 (SIN REGEX)
+    @app.template_filter('safe_title')
+    def safe_title_filter(text):
+        """Convierte texto a título de forma segura"""
         try:
-            return bool(re.search(pattern, str(text)))
+            return str(text).title() if text else ''
         except:
-            return False
+            return ''
     
-    @app.template_filter('regex_split')
-    def regex_split_filter(text, pattern):
-        """Divide texto usando un patrón regex"""
+    @app.template_filter('safe_upper')
+    def safe_upper_filter(text):
+        """Convierte texto a mayúsculas de forma segura"""
         try:
-            return re.split(pattern, str(text))
+            return str(text).upper() if text else ''
         except:
-            return [str(text)]
+            return ''
     
-    @app.template_filter('regex_replace')
-    def regex_replace_filter(text, pattern, replacement=''):
-        """Reemplaza texto usando regex"""
+    @app.template_filter('safe_lower')
+    def safe_lower_filter(text):
+        """Convierte texto a minúsculas de forma segura"""
         try:
-            return re.sub(pattern, replacement, str(text))
+            return str(text).lower() if text else ''
         except:
-            return str(text)
+            return ''
     
-    @app.template_filter('regex_match')
-    def regex_match_filter(text, pattern):
-        """Verifica si el texto coincide completamente con el patrón"""
+    @app.template_filter('safe_strip')
+    def safe_strip_filter(text):
+        """Remueve espacios en blanco de forma segura"""
         try:
-            return bool(re.match(pattern, str(text)))
+            return str(text).strip() if text else ''
         except:
-            return False
+            return ''
     
     # ✅ FILTRO PARA LIMPIAR INSTRUCCIONES SIN REGEX
     @app.template_filter('clean_instructions')
@@ -72,55 +71,60 @@ def create_app():
         if not text:
             return []
         
-        text = str(text).strip()
-        
-        # Método 1: Dividir por saltos de línea
-        if '\n' in text:
-            steps = text.split('\n')
-        # Método 2: Dividir por números seguidos de punto
-        elif '1.' in text or '2.' in text:
-            # Dividir manualmente por números
-            steps = []
-            current_step = ""
-            lines = text.split('.')
+        try:
+            text = str(text).strip()
             
-            for line in lines:
-                line = line.strip()
-                if line and any(line.startswith(str(i)) for i in range(1, 21)):
-                    if current_step:
-                        steps.append(current_step.strip())
-                    current_step = line[1:].strip() if len(line) > 1 else line
-                else:
-                    current_step += '. ' + line if current_step else line
+            # Método 1: Dividir por saltos de línea
+            if '\n' in text:
+                steps = text.split('\n')
+            # Método 2: Dividir por puntos
+            elif '.' in text:
+                steps = text.split('.')
+            else:
+                return [text]
             
-            if current_step:
-                steps.append(current_step.strip())
-        # Método 3: Dividir por puntos
-        else:
-            steps = text.split('.')
-        
-        # Limpiar y filtrar pasos
-        cleaned_steps = []
-        for step in steps:
-            step = step.strip()
-            if step and len(step) > 15:
-                # Remover numeración al inicio
-                for i in range(1, 21):
-                    if step.startswith(f'{i}.') or step.startswith(f'{i})'):
-                        step = step[len(str(i))+1:].strip()
-                        break
-                
-                # Capitalizar primera letra
-                if step:
-                    step = step[0].upper() + step[1:] if len(step) > 1 else step.upper()
-                    
-                    # Asegurar que termine con punto
-                    if not step.endswith('.'):
-                        step += '.'
-                    
-                    cleaned_steps.append(step)
-        
-        return cleaned_steps if cleaned_steps else [text]
+            # Limpiar y filtrar pasos
+            cleaned_steps = []
+            for step in steps:
+                if step and step.strip():
+                    clean_step = step.strip()
+                    # Solo agregar pasos que tengan contenido sustancial
+                    if len(clean_step) > 10:
+                        # Capitalizar primera letra si no está ya
+                        if clean_step and clean_step[0].islower():
+                            clean_step = clean_step[0].upper() + clean_step[1:]
+                        
+                        # Asegurar que termine con punto
+                        if not clean_step.endswith('.'):
+                            clean_step += '.'
+                        
+                        cleaned_steps.append(clean_step)
+            
+            return cleaned_steps if cleaned_steps else [text]
+            
+        except Exception as e:
+            print(f"Error en clean_instructions: {e}")
+            return [str(text)]
+    
+    # ✅ FILTRO PARA FORMATEAR NÚMEROS DE FORMA SEGURA
+    @app.template_filter('safe_format')
+    def safe_format_filter(value, format_str='%.1f'):
+        """Formatea números de forma segura"""
+        try:
+            if value is None:
+                return '0'
+            return format_str % float(value)
+        except:
+            return str(value) if value else '0'
+    
+    # ✅ FILTRO PARA MANEJAR VALORES POR DEFECTO
+    @app.template_filter('default_value')
+    def default_value_filter(value, default='N/A'):
+        """Devuelve un valor por defecto si el valor es None o vacío"""
+        try:
+            return value if value is not None and str(value).strip() else default
+        except:
+            return default
     
     # ✅ MEJORAR DESCARGA DE DATOS NLTK
     def setup_nltk():
@@ -137,21 +141,55 @@ def create_app():
                 print("✅ Datos NLTK descargados")
             except Exception as e:
                 print(f"⚠️ Error descargando NLTK: {e}")
+        except Exception as e:
+            print(f"⚠️ Error general con NLTK: {e}")
     
     # Configurar NLTK en un hilo separado para no bloquear la app
-    import threading
-    nltk_thread = threading.Thread(target=setup_nltk)
-    nltk_thread.daemon = True
-    nltk_thread.start()
+    try:
+        import threading
+        nltk_thread = threading.Thread(target=setup_nltk)
+        nltk_thread.daemon = True
+        nltk_thread.start()
+    except Exception as e:
+        print(f"⚠️ No se pudo inicializar NLTK: {e}")
+    
+    # ✅ MANEJAR ERRORES DE TEMPLATE DE FORMA SEGURA
+    @app.errorhandler(500)
+    def handle_template_error(error):
+        print(f"❌ Error 500: {error}")
+        # En caso de error de template, devolver una respuesta básica
+        return "Error interno del servidor. Por favor, intenta nuevamente.", 500
+    
+    @app.errorhandler(Exception)
+    def handle_general_error(error):
+        print(f"❌ Error general: {error}")
+        # Logging del error para debug
+        import traceback
+        traceback.print_exc()
+        return "Ha ocurrido un error. Por favor, intenta nuevamente.", 500
     
     # Registrar blueprints
-    from app.routes import main
-    from app.auth import auth
-    app.register_blueprint(main)
-    app.register_blueprint(auth, url_prefix='/auth')
+    try:
+        from app.routes import main
+        from app.auth import auth
+        app.register_blueprint(main)
+        app.register_blueprint(auth, url_prefix='/auth')
+        print("✅ Blueprints registrados correctamente")
+    except Exception as e:
+        print(f"❌ Error registrando blueprints: {e}")
+        raise e
     
     # Crear directorios necesarios
-    os.makedirs(app.config.get('PDF_UPLOAD_FOLDER', 'static/pdfs'), exist_ok=True)
-    os.makedirs(app.config.get('ML_MODEL_PATH', 'ml_models/trained_models'), exist_ok=True)
+    try:
+        os.makedirs(app.config.get('PDF_UPLOAD_FOLDER', 'static/pdfs'), exist_ok=True)
+        os.makedirs(app.config.get('ML_MODEL_PATH', 'ml_models/trained_models'), exist_ok=True)
+        print("✅ Directorios creados correctamente")
+    except Exception as e:
+        print(f"⚠️ Error creando directorios: {e}")
     
+    # ✅ CONFIGURACIÓN ADICIONAL PARA TEMPLATE ENGINE
+    app.jinja_env.trim_blocks = True
+    app.jinja_env.lstrip_blocks = True
+    
+    print("✅ Aplicación Flask configurada correctamente")
     return app

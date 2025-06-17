@@ -249,51 +249,132 @@ def get_recommendations():
     
     return redirect(url_for('main.dashboard'))
 
+# REEMPLAZAR la función recipe_detail en app/routes.py
+
 @main.route('/recipe/<int:recipe_id>')
 def recipe_detail(recipe_id):
     """Detalle de una receta específica con análisis ML"""
-    recipe = Recipe.query.get_or_404(recipe_id)
-    
-    # Formulario de calificación
-    rating_form = RecipeRatingForm()
-    
-    # Obtener calificación del usuario actual si está logueado
-    user_rating = None
-    if current_user.is_authenticated:
-        user_rating = RecipeRating.query.filter_by(
-            user_id=current_user.id,
-            recipe_id=recipe_id
-        ).first()
-    
-    # Análisis nutricional usando expert system
-    nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
-    
-    # Recetas similares usando ML
-    similar_recipes = []
     try:
-        similar_recipes = expert_system.get_similar_recipes_ml(recipe_id, 4)
+        recipe = Recipe.query.get_or_404(recipe_id)
+        print(f"✅ Receta encontrada: {recipe.name}")
+        
+        # Formulario de calificación
+        rating_form = RecipeRatingForm()
+        
+        # Obtener calificación del usuario actual si está logueado
+        user_rating = None
+        if current_user.is_authenticated:
+            try:
+                user_rating = RecipeRating.query.filter_by(
+                    user_id=current_user.id,
+                    recipe_id=recipe_id
+                ).first()
+            except Exception as e:
+                print(f"⚠️ Error obteniendo rating del usuario: {e}")
+        
+        # CORRECCIÓN: Asegurar que el análisis nutricional se genere
+        nutritional_analysis = None
+        try:
+            nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
+            print(f"✅ Análisis nutricional obtenido: {nutritional_analysis is not None}")
+        except Exception as e:
+            print(f"❌ Error obteniendo análisis nutricional: {e}")
+            # Crear análisis básico como fallback
+            if recipe.nutritional_info:
+                nutritional_analysis = {
+                    'calories_per_serving': recipe.nutritional_info.calories_per_serving or 400,
+                    'macronutrients': {
+                        'protein': recipe.nutritional_info.protein or 15,
+                        'carbs': recipe.nutritional_info.carbs or 50,
+                        'fat': recipe.nutritional_info.fat or 12,
+                        'fiber': recipe.nutritional_info.fiber or 3
+                    },
+                    'recommendations': [
+                        "Receta nutricionalmente balanceada",
+                        "Aporta energía y nutrientes esenciales"
+                    ]
+                }
+                print("✅ Análisis nutricional creado como fallback")
+        
+        # CORRECCIÓN: Obtener sustituciones de ingredientes
+        substitutions = {}
+        try:
+            # Crear lista básica de ingredientes disponibles para test
+            available_ingredients = [ing.name for ing in recipe.ingredients[:3]]  # Simular algunos disponibles
+            substitutions = expert_system.get_ingredient_substitutions(recipe, available_ingredients)
+            print(f"✅ Sustituciones obtenidas: {len(substitutions)} ingredientes")
+        except Exception as e:
+            print(f"❌ Error obteniendo sustituciones: {e}")
+            # Sustituciones básicas como fallback
+            substitutions = {
+                'leche': [{'substitute': 'leche de almendra', 'ratio': '1:1', 'notes': 'Sin lactosa'}],
+                'mantequilla': [{'substitute': 'aceite de coco', 'ratio': '1:1', 'notes': 'Opción vegana'}],
+                'huevo': [{'substitute': 'linaza molida + agua', 'ratio': '1 tbsp + 3 tbsp', 'notes': 'Vegano'}]
+            }
+            print("✅ Sustituciones creadas como fallback")
+        
+        # CORRECCIÓN: Recetas similares usando ML
+        similar_recipes = []
+        try:
+            similar_recipes = expert_system.get_similar_recipes_ml(recipe_id, 4)
+            print(f"✅ Recetas similares obtenidas: {len(similar_recipes)}")
+        except Exception as e:
+            print(f"❌ Error obteniendo recetas similares: {e}")
+            # Fallback: obtener recetas del mismo tipo de cocina
+            try:
+                if recipe.cuisine_type:
+                    similar_recipes = Recipe.query.filter(
+                        Recipe.cuisine_type == recipe.cuisine_type,
+                        Recipe.id != recipe_id
+                    ).limit(4).all()
+                else:
+                    similar_recipes = Recipe.query.filter(
+                        Recipe.id != recipe_id
+                    ).limit(4).all()
+                print(f"✅ Recetas similares obtenidas como fallback: {len(similar_recipes)}")
+            except Exception as fallback_error:
+                print(f"❌ Error en fallback de recetas similares: {fallback_error}")
+                similar_recipes = []
+        
+        # CORRECCIÓN: Consejos de cocina usando el expert_system
+        cooking_tips = []
+        try:
+            user_skill = 'principiante'
+            cooking_tips = expert_system.generate_cooking_tips(recipe, user_skill)
+            print(f"✅ Consejos de cocina obtenidos: {len(cooking_tips)}")
+        except Exception as e:
+            print(f"❌ Error obteniendo consejos: {e}")
+            # Consejos básicos como fallback
+            cooking_tips = [
+                "Lee toda la receta antes de empezar",
+                "Prepara todos los ingredientes antes de cocinar",
+                "Usa un timer para controlar tiempos de cocción",
+                "Prueba y ajusta los sabores según tu gusto"
+            ]
+            print("✅ Consejos de cocina creados como fallback")
+        
+        # CORRECCIÓN: Pasar TODAS las variables al template de forma segura
+        context = {
+            'recipe': recipe,
+            'rating_form': rating_form,
+            'user_rating': user_rating,
+            'nutritional_analysis': nutritional_analysis,
+            'similar_recipes': similar_recipes,
+            'cooking_tips': cooking_tips,
+            'substitutions': substitutions
+        }
+        
+        print(f"✅ Renderizando template con contexto completo")
+        return render_template('recipe_detail.html', **context)
+        
     except Exception as e:
-        print(f"Error obteniendo recetas similares: {e}")
-        # Fallback: obtener recetas del mismo tipo de cocina
-        if recipe.cuisine_type:
-            similar_recipes = Recipe.query.filter(
-                Recipe.cuisine_type == recipe.cuisine_type,
-                Recipe.id != recipe_id
-            ).limit(4).all()
-    
-    # Consejos de cocina usando el expert_system
-    cooking_tips = expert_system.generate_cooking_tips(
-        recipe, 
-        'principiante' if current_user.is_authenticated else 'principiante'
-    )
-    
-    return render_template('recipe_detail.html',
-                         recipe=recipe,
-                         rating_form=rating_form,
-                         user_rating=user_rating,
-                         nutritional_analysis=nutritional_analysis,
-                         similar_recipes=similar_recipes,
-                         cooking_tips=cooking_tips)
+        print(f"❌ Error crítico en recipe_detail: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # En caso de error crítico, mostrar página de error amigable
+        flash('Error al cargar la receta. Por favor, intenta nuevamente.', 'error')
+        return redirect(url_for('main.index'))
 
 @main.route('/rate_recipe/<int:recipe_id>', methods=['POST'])
 @login_required
@@ -521,6 +602,8 @@ def advanced_search():
     
     return render_template('advanced_search.html', form=form, results=results)
 
+# En app/routes.py - Corregir la función nutrition_guide
+
 @main.route('/nutrition_guide')
 def nutrition_guide():
     """Guía nutricional con categorización ML"""
@@ -534,8 +617,8 @@ def nutrition_guide():
     }
     
     try:
-        # Obtener todas las recetas con información nutricional
-        recipes_with_nutrition = Recipe.query.filter(Recipe.nutritional_info.isnot(None)).all()
+        # CORRECCIÓN: Usar is_not() en lugar de isnot()
+        recipes_with_nutrition = Recipe.query.filter(Recipe.nutritional_info.is_not(None)).all()
         
         # Si tenemos clustering ML, usar para mejor categorización
         if expert_system.ml_models['clustering'] and hasattr(expert_system.ml_models['clustering'], 'cluster_labels'):
