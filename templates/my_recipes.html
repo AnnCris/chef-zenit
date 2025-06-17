@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Recetas - Sistema Experto Culinario{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">
+                                <i class="fas fa-heart me-2"></i>
+                                Mis Recetas Favoritas
+                            </h2>
+                            <p class="mb-0 opacity-75">
+                                Recetas que has calificado y comentado
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="fas fa-user-chef fa-3x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas del usuario -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-star fa-2x text-warning mb-2"></i>
+                    <h4 class="mb-1">{{ user_ratings|length }}</h4>
+                    <small class="text-muted">Recetas Calificadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                    <h4 class="mb-1">
+                        {% if user_ratings %}
+                            {{ "%.1f"|format(user_ratings|map(attribute='rating')|sum / user_ratings|length) }}
+                        {% else %}
+                            0.0
+                        {% endif %}
+                    </h4>
+                    <small class="text-muted">Rating Promedio</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-thumbs-up fa-2x text-primary mb-2"></i>
+                    <h4 class="mb-1">
+                        {{ user_ratings|selectattr('rating', 'ge', 4)|list|length }}
+                    </h4>
+                    <small class="text-muted">Muy Buenas (4+★)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-comments fa-2x text-info mb-2"></i>
+                    <h4 class="mb-1">
+                        {{ user_ratings|selectattr('comment')|list|length }}
+                    </h4>
+                    <small class="text-muted">Con Comentarios</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label for="rating-filter" class="form-label">Filtrar por calificación:</label>
+                            <select id="rating-filter" class="form-select" onchange="filterRecipes()">
+                                <option value="">Todas las calificaciones</option>
+                                <option value="5">5 estrellas</option>
+                                <option value="4">4+ estrellas</option>
+                                <option value="3">3+ estrellas</option>
+                                <option value="2">2+ estrellas</option>
+                                <option value="1">1+ estrellas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="sort-filter" class="form-label">Ordenar por:</label>
+                            <select id="sort-filter" class="form-select" onchange="sortRecipes()">
+                                <option value="date">Fecha (más reciente)</option>
+                                <option value="rating">Calificación (mayor)</option>
+                                <option value="name">Nombre (A-Z)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="search-input" class="form-label">Buscar receta:</label>
+                            <input type="text" id="search-input" class="form-control" 
+                                   placeholder="Nombre de receta..." onkeyup="searchRecipes()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de recetas calificadas -->
+    {% if user_ratings %}
+    <div id="recipes-container">
+        {% for rating in user_ratings %}
+        <div class="recipe-item card mb-3" 
+             data-rating="{{ rating.rating }}"
+             data-date="{{ rating.created_at.isoformat() if rating.created_at else '' }}"
+             data-name="{{ rating.rated_recipe.name if rating.rated_recipe else 'Receta sin nombre' }}">
+            <div class="row g-0">
+                <!-- Imagen -->
+                <div class="col-md-3">
+                    {% if rating.rated_recipe and rating.rated_recipe.image_path %}
+                    <img src="{{ rating.rated_recipe.image_path }}" 
+                         class="img-fluid h-100 w-100" 
+                         style="object-fit: cover; min-height: 200px;">
+                    {% else %}
+                    <div class="bg-light h-100 d-flex align-items-center justify-content-center" 
+                         style="min-height: 200px;">
+                        <i class="fas fa-utensils fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Contenido -->
+                <div class="col-md-9">
+                    <div class="card-body h-100 d-flex flex-column">
+                        <!-- Header con título y rating -->
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="card-title mb-2">
+                                    {% if rating.rated_recipe %}
+                                    <a href="{{ url_for('main.recipe_detail', recipe_id=rating.rated_recipe.id) }}" 
+                                       class="text-decoration-none">
+                                        {{ rating.rated_recipe.name }}
+                                    </a>
+                                    {% else %}
+                                    Receta no disponible
+                                    {% endif %}
+                                </h5>
+                                
+                                <!-- Mi calificación -->
+                                <div class="rating-stars mb-2">
+                                    {% for i in range(rating.rating) %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - rating.rating) %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endfor %}
+                                    <span class="ms-2 fw-bold">Mi calificación: {{ rating.rating }}/5</span>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <small class="text-muted">
+                                    Calificada el {{ rating.created_at.strftime('%d/%m/%Y') if rating.created_at else 'Fecha no disponible' }}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Descripción de la receta -->
+                        {% if rating.rated_recipe and rating.rated_recipe.description %}
+                        <p class="card-text text-muted mb-3">
+                            {{ rating.rated_recipe.description[:150] }}
+                            {% if rating.rated_recipe.description|length > 150 %}...{% endif %}
+                        </p>
+                        {% endif %}
+                        
+                        <!-- Mi comentario -->
+                        {% if rating.comment %}
+                        <div class="mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-quote-left me-1"></i>
+                                Mi comentario:
+                            </h6>
+                            <div class="bg-light rounded p-3">
+                                <em>"{{ rating.comment }}"</em>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Metadatos de la receta -->
+                        {% if rating.rated_recipe %}
+                        <div class="row g-3 mb-3">
+                            <div class="col-auto">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> {{ rating.rated_recipe.total_time or 'N/A' }} min
+                                </small>
+                            </div>
+                            <div class="col-auto">
+                                <small class="text-muted">
+                                    <i class="fas fa-signal"></i> {{ rating.rated_recipe.difficulty|title or 'N/A' }}
+                                </small>
+                            </div>
+                            <div class="col-auto">
+                                <small class="text-muted">
+                                    <i class="fas fa-users"></i> {{ rating.rated_recipe.servings or 4 }} porciones
+                                </small>
+                            </div>
+                            {% if rating.rated_recipe.cuisine_type %}
+                            <div class="col-auto">
+                                <span class="badge bg-secondary">{{ rating.rated_recipe.cuisine_type|title }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Rating promedio de la receta -->
+                        {% if rating.rated_recipe.average_rating > 0 %}
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <strong>Rating general:</strong>
+                                <span class="rating-stars">
+                                    {% for i in range(rating.rated_recipe.average_rating|int) %}
+                                        <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - rating.rated_recipe.average_rating|int) %}
+                                        <i class="far fa-star"></i>
+                                    {% endfor %}
+                                </span>
+                                ({{ "%.1f"|format(rating.rated_recipe.average_rating) }})
+                            </small>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                        
+                        <!-- Botones de acción -->
+                        <div class="mt-auto">
+                            <div class="d-flex gap-2">
+                                {% if rating.rated_recipe %}
+                                <a href="{{ url_for('main.recipe_detail', recipe_id=rating.rated_recipe.id) }}" 
+                                   class="btn btn-primary">
+                                    <i class="fas fa-eye"></i> Ver Receta
+                                </a>
+                                <button onclick="addToPDF({{ rating.rated_recipe.id }})" 
+                                        class="btn btn-outline-primary">
+                                    <i class="fas fa-plus"></i> Agregar a PDF
+                                </button>
+                                <a href="{{ url_for('main.recipe_detail', recipe_id=rating.rated_recipe.id) }}#rating-form" 
+                                   class="btn btn-outline-warning">
+                                    <i class="fas fa-edit"></i> Editar Calificación
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% else %}
+    <!-- Sin calificaciones -->
+    <div class="text-center py-5">
+        <i class="fas fa-star fa-3x text-muted mb-3"></i>
+        <h3 class="text-muted">Aún no has calificado ninguna receta</h3>
+        <p class="text-muted mb-4">
+            Comienza explorando recetas y comparte tu opinión con la comunidad
+        </p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-search"></i> Buscar Recetas
+            </a>
+            <a href="{{ url_for('main.advanced_search') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-filter"></i> Búsqueda Avanzada
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Análisis de preferencias -->
+    {% if preferences_analysis %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Análisis de tus Preferencias
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Tipos de cocina favoritos:</h6>
+                            <div class="mb-3">
+                                {% for cuisine, count in preferences_analysis.favorite_cuisines.items() %}
+                                <span class="badge bg-primary me-1 mb-1">{{ cuisine|title }} ({{ count }})</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Nivel de dificultad preferido:</h6>
+                            <div class="mb-3">
+                                {% for difficulty, count in preferences_analysis.preferred_difficulty.items() %}
+                                <span class="badge bg-success me-1 mb-1">{{ difficulty|title }} ({{ count }})</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h6>Recomendaciones basadas en tu historial:</h6>
+                    <ul class="list-unstyled">
+                        {% for recommendation in preferences_analysis.recommendations %}
+                        <li class="mb-1">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>
+                            {{ recommendation }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filtrar recetas por calificación
+    function filterRecipes() {
+        const filterValue = document.getElementById('rating-filter').value;
+        const recipes = document.querySelectorAll('.recipe-item');
+        
+        recipes.forEach(recipe => {
+            const rating = parseInt(recipe.dataset.rating);
+            if (!filterValue || rating >= parseInt(filterValue)) {
+                recipe.style.display = 'block';
+            } else {
+                recipe.style.display = 'none';
+            }
+        });
+    }
+    
+    // Ordenar recetas
+    function sortRecipes() {
+        const sortValue = document.getElementById('sort-filter').value;
+        const container = document.getElementById('recipes-container');
+        const recipes = Array.from(container.children);
+        
+        recipes.sort((a, b) => {
+            switch(sortValue) {
+                case 'rating':
+                    return parseInt(b.dataset.rating) - parseInt(a.dataset.rating);
+                case 'name':
+                    return a.dataset.name.localeCompare(b.dataset.name);
+                case 'date':
+                default:
+                    return new Date(b.dataset.date) - new Date(a.dataset.date);
+            }
+        });
+        
+        // Reorganizar elementos
+        recipes.forEach(recipe => container.appendChild(recipe));
+    }
+    
+    // Buscar recetas por nombre
+    function searchRecipes() {
+        const searchValue = document.getElementById('search-input').value.toLowerCase();
+        const recipes = document.querySelectorAll('.recipe-item');
+        
+        recipes.forEach(recipe => {
+            const recipeName = recipe.dataset.name.toLowerCase();
+            if (recipeName.includes(searchValue)) {
+                recipe.style.display = 'block';
+            } else {
+                recipe.style.display = 'none';
+            }
+        });
+    }
+    
+    // Agregar a PDF
+    function addToPDF(recipeId) {
+        let pdfList = JSON.parse(localStorage.getItem('pdfRecipes') || '[]');
+        if (!pdfList.includes(recipeId)) {
+            pdfList.push(recipeId);
+            localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
+            if (typeof updatePDFCounter === 'function') {
+                updatePDFCounter();
+            }
+            showToast('Receta agregada a tu lista de PDF');
+        } else {
+            showToast('Esta receta ya está en tu lista de PDF', 'warning');
+        }
+    }
+    
+    // Mostrar toast
+    function showToast(message, type = 'success') {
+        // Crear toast si no existe la función global
+        if (typeof window.showToast !== 'function') {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.zIndex = '9999';
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
+        } else {
+            window.showToast(message, type);
+        }
+    }
+</script>
+{% endblock %}

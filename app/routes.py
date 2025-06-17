@@ -8,6 +8,7 @@ from ml_models.recommendation_engine import RecommendationEngine
 import json
 from datetime import datetime
 import os
+from app.models import Recipe, Ingredient, User, DietaryRestriction, UserPreference, RecipeRating, NutritionalInfo, db
 
 main = Blueprint('main', __name__)
 
@@ -399,21 +400,61 @@ def advanced_search():
 @main.route('/nutrition_guide')
 def nutrition_guide():
     """Guía nutricional con recomendaciones"""
-    # Obtener recetas agrupadas por beneficios nutricionales
+    
+    # Versión simplificada que funciona sin joins complejos
     nutritional_categories = {
-        'high_protein': Recipe.query.join(Recipe.nutritional_info).filter(
-            Recipe.nutritional_info.has(protein__gte=20)
-        ).limit(6).all(),
-        'high_fiber': Recipe.query.join(Recipe.nutritional_info).filter(
-            Recipe.nutritional_info.has(fiber__gte=8)
-        ).limit(6).all(),
-        'low_sodium': Recipe.query.join(Recipe.nutritional_info).filter(
-            Recipe.nutritional_info.has(sodium__lte=600)
-        ).limit(6).all(),
-        'vitamin_rich': Recipe.query.join(Recipe.nutritional_info).filter(
-            Recipe.nutritional_info.has(vitamin_c__gte=30)
-        ).limit(6).all()
+        'high_protein': [],
+        'high_fiber': [],
+        'low_sodium': [],
+        'vitamin_rich': []
     }
+    
+    try:
+        # Obtener todas las recetas con información nutricional
+        recipes_with_nutrition = Recipe.query.filter(Recipe.nutritional_info.isnot(None)).all()
+        
+        for recipe in recipes_with_nutrition:
+            if recipe.nutritional_info:
+                nutrition = recipe.nutritional_info
+                
+                # Recetas altas en proteína (20g+)
+                if nutrition.protein and nutrition.protein >= 20:
+                    if len(nutritional_categories['high_protein']) < 6:
+                        nutritional_categories['high_protein'].append(recipe)
+                
+                # Recetas altas en fibra (8g+)
+                if nutrition.fiber and nutrition.fiber >= 8:
+                    if len(nutritional_categories['high_fiber']) < 6:
+                        nutritional_categories['high_fiber'].append(recipe)
+                
+                # Recetas bajas en sodio (600mg o menos)
+                if nutrition.sodium and nutrition.sodium <= 600:
+                    if len(nutritional_categories['low_sodium']) < 6:
+                        nutritional_categories['low_sodium'].append(recipe)
+                
+                # Recetas ricas en vitamina C (30mg+)
+                if nutrition.vitamin_c and nutrition.vitamin_c >= 30:
+                    if len(nutritional_categories['vitamin_rich']) < 6:
+                        nutritional_categories['vitamin_rich'].append(recipe)
+        
+        print(f"🍎 Categorías nutricionales: {[(k, len(v)) for k, v in nutritional_categories.items()]}")
+        
+    except Exception as e:
+        print(f"❌ Error en nutrition_guide: {e}")
+        # Si hay error, usar recetas aleatorias
+        try:
+            all_recipes = Recipe.query.limit(24).all()
+            # Dividir en 4 categorías
+            chunk_size = len(all_recipes) // 4
+            if chunk_size > 0:
+                nutritional_categories = {
+                    'high_protein': all_recipes[0:chunk_size],
+                    'high_fiber': all_recipes[chunk_size:chunk_size*2],
+                    'low_sodium': all_recipes[chunk_size*2:chunk_size*3],
+                    'vitamin_rich': all_recipes[chunk_size*3:chunk_size*4]
+                }
+        except:
+            pass
     
     return render_template('nutrition_guide.html', categories=nutritional_categories)
 
@@ -580,12 +621,76 @@ def my_recipes():
         RecipeRating.created_at.desc()
     ).all()
     
-    # Análisis de preferencias del usuario basado en clustering
-    user_preferences_analysis = clustering_model.analyze_user_preferences(current_user.id)
+    # Análisis simple de preferencias del usuario (sin clustering)
+    preferences_analysis = None
+    
+    if user_ratings:
+        try:
+            # Análisis básico sin clustering
+            preferences_analysis = analyze_user_preferences_simple(current_user.id, user_ratings)
+        except Exception as e:
+            print(f"Error en análisis de preferencias: {e}")
+            preferences_analysis = None
     
     return render_template('my_recipes.html', 
                          user_ratings=user_ratings,
-                         preferences_analysis=user_preferences_analysis)
+                         preferences_analysis=preferences_analysis)
+
+def analyze_user_preferences_simple(user_id, user_ratings):
+    """Análisis simple de preferencias sin clustering"""
+    if not user_ratings:
+        return None
+    
+    # Contar tipos de cocina favoritos
+    favorite_cuisines = {}
+    preferred_difficulty = {}
+    high_rated_recipes = []
+    
+    for rating in user_ratings:
+        if rating.rated_recipe:
+            recipe = rating.rated_recipe
+            
+            # Contar tipos de cocina de recetas bien calificadas (4+)
+            if rating.rating >= 4 and recipe.cuisine_type:
+                cuisine = recipe.cuisine_type
+                favorite_cuisines[cuisine] = favorite_cuisines.get(cuisine, 0) + 1
+            
+            # Contar dificultad preferida
+            if recipe.difficulty:
+                difficulty = recipe.difficulty
+                preferred_difficulty[difficulty] = preferred_difficulty.get(difficulty, 0) + 1
+            
+            # Recopilar recetas muy bien calificadas
+            if rating.rating >= 4:
+                high_rated_recipes.append(recipe)
+    
+    # Generar recomendaciones simples
+    recommendations = []
+    
+    if favorite_cuisines:
+        top_cuisine = max(favorite_cuisines.items(), key=lambda x: x[1])
+        recommendations.append(f"Te gusta especialmente la cocina {top_cuisine[0]}")
+    
+    if preferred_difficulty:
+        top_difficulty = max(preferred_difficulty.items(), key=lambda x: x[1])
+        recommendations.append(f"Prefieres recetas de dificultad {top_difficulty[0]}")
+    
+    avg_rating = sum(r.rating for r in user_ratings) / len(user_ratings)
+    if avg_rating >= 4:
+        recommendations.append("Eres un crítico exigente, tus calificaciones son altas")
+    elif avg_rating <= 2.5:
+        recommendations.append("Eres selectivo con las recetas, busca nuevas opciones")
+    
+    if len([r for r in user_ratings if r.comment]) > len(user_ratings) * 0.5:
+        recommendations.append("Te gusta compartir tu experiencia con comentarios detallados")
+    
+    return {
+        'favorite_cuisines': favorite_cuisines,
+        'preferred_difficulty': preferred_difficulty,
+        'recommendations': recommendations,
+        'high_rated_count': len(high_rated_recipes),
+        'average_rating': avg_rating
+    }
 
 @main.route('/ingredient_suggestions')
 def ingredient_suggestions():
@@ -623,10 +728,57 @@ def recipe_of_the_day():
     recipe = Recipe.query.offset(recipe_index).first()
     
     # Información adicional
-    nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
-    cooking_tips = expert_system.nlp_processor.generate_cooking_tips(recipe)
+    nutritional_analysis = None
+    cooking_tips = []
+    
+    if recipe:
+        try:
+            nutritional_analysis = expert_system.get_nutritional_analysis(recipe)
+        except:
+            nutritional_analysis = None
+        
+        try:
+            # Consejos simples sin NLP
+            cooking_tips = generate_simple_cooking_tips_for_recipe(recipe)
+        except:
+            cooking_tips = []
     
     return render_template('recipe_of_the_day.html', 
                          recipe=recipe,
                          nutritional_analysis=nutritional_analysis,
                          cooking_tips=cooking_tips)
+
+def generate_simple_cooking_tips_for_recipe(recipe):
+    """Genera consejos simples para una receta"""
+    tips = []
+    
+    if not recipe:
+        return tips
+    
+    # Consejos generales
+    tips.append("Lee toda la receta antes de empezar")
+    tips.append("Prepara todos los ingredientes antes de cocinar")
+    
+    # Consejos específicos por ingredientes
+    ingredient_names = [ing.name.lower() for ing in recipe.ingredients]
+    ingredients_text = ' '.join(ingredient_names)
+    
+    if 'ajo' in ingredients_text:
+        tips.append("Aplasta el ajo con el lado plano del cuchillo para pelarlo fácilmente")
+    
+    if 'cebolla' in ingredients_text:
+        tips.append("Refrigera la cebolla 30 minutos antes de cortarla para evitar llorar")
+    
+    if 'arroz' in ingredients_text:
+        tips.append("Lava el arroz hasta que el agua salga clara")
+    
+    if 'pollo' in ingredients_text:
+        tips.append("Asegúrate de que el pollo alcance 75°C de temperatura interna")
+    
+    # Consejos por dificultad
+    if recipe.difficulty == 'difícil':
+        tips.append("Tómate tu tiempo y sigue cada paso cuidadosamente")
+    elif recipe.difficulty == 'fácil':
+        tips.append("Receta perfecta para principiantes")
+    
+    return tips[:5]
