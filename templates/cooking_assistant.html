@@ -14,7 +14,7 @@
                         Asistente de Cocina Inteligente
                     </h1>
                     <p class="lead mb-0">
-                        Tu chef personal con inteligencia artificial está aquí para ayudarte
+                        Tu chef personal con IA avanzada para técnicas, recetas y consejos culinarios
                     </p>
                 </div>
             </div>
@@ -34,9 +34,9 @@
                             </div>
                         </div>
                         <div class="flex-grow-1 ms-3">
-                            <h5 class="mb-0">Chef AI Assistant</h5>
+                            <h5 class="mb-0">Chef AI Master</h5>
                             <small class="opacity-75">
-                                <span class="status-indicator"></span> En línea
+                                <span class="status-indicator"></span> Especialista en técnicas culinarias
                             </small>
                         </div>
                         <div class="flex-shrink-0">
@@ -61,15 +61,17 @@
                                 </div>
                                 <div class="flex-grow-1 ms-3">
                                     <div class="bg-light rounded p-3">
-                                        <p class="mb-2">¡Hola! Soy tu asistente culinario inteligente. 🍳</p>
-                                        <p class="mb-0">Puedo ayudarte con:</p>
+                                        <p class="mb-2">¡Hola! Soy tu Chef AI Master especializado en técnicas culinarias. 👨‍🍳✨</p>
+                                        <p class="mb-0"><strong>Puedo ayudarte con:</strong></p>
                                         <ul class="mb-0 mt-2">
-                                            <li>Sugerencias de recetas</li>
-                                            <li>Consejos de cocina</li>
-                                            <li>Información nutricional</li>
-                                            <li>Sustitutos de ingredientes</li>
-                                            <li>Técnicas culinarias</li>
+                                            <li><strong>Técnicas culinarias:</strong> sofrito, braseado, confitado, etc.</li>
+                                            <li><strong>Métodos de cocción:</strong> al vapor, en papillote, sous vide</li>
+                                            <li><strong>Cortes de cuchillo:</strong> juliana, brunoise, chiffonade</li>
+                                            <li><strong>Recomendaciones de recetas</strong> según ingredientes</li>
+                                            <li><strong>Información nutricional</strong> y sustitutos</li>
+                                            <li><strong>Troubleshooting:</strong> cómo arreglar errores en cocina</li>
                                         </ul>
+                                        <p class="mt-2 mb-0"><em>💡 Pregúntame específicamente sobre cualquier técnica o método!</em></p>
                                     </div>
                                     <small class="text-muted">Hace un momento</small>
                                 </div>
@@ -82,7 +84,7 @@
                         <input type="text" 
                                id="message-input" 
                                class="form-control" 
-                               placeholder="Escribe tu pregunta culinaria aquí..."
+                               placeholder="Ej: ¿Cómo hacer un sofrito perfecto? ¿Qué es el braseado?"
                                onkeypress="handleKeyPress(event)">
                         <button class="btn btn-success" onclick="sendMessage()" id="send-btn">
                             <i class="fas fa-paper-plane"></i>
@@ -94,106 +96,124 @@
         
         <!-- Sidebar con sugerencias -->
         <div class="col-lg-4">
-            <!-- Sugerencias rápidas -->
+            <!-- Técnicas Culinarias -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-lightbulb text-warning me-2"></i>
-                        Preguntas Frecuentes
+                        <i class="fas fa-fire text-danger me-2"></i>
+                        Técnicas Culinarias
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <button class="btn btn-outline-primary btn-sm text-start" 
-                                onclick="quickQuestion('¿Qué puedo cocinar con pollo y arroz?')">
-                            🍗 ¿Qué puedo cocinar con pollo y arroz?
+                                onclick="quickQuestion('¿Cómo hacer un sofrito perfecto?')">
+                            🧄 ¿Cómo hacer un sofrito perfecto?
                         </button>
                         <button class="btn btn-outline-primary btn-sm text-start" 
-                                onclick="quickQuestion('¿Cómo sustituir huevos en una receta vegana?')">
-                            🥚 ¿Cómo sustituir huevos en recetas veganas?
+                                onclick="quickQuestion('¿Qué es el braseado y cómo se hace?')">
+                            🍖 ¿Qué es el braseado y cómo se hace?
                         </button>
                         <button class="btn btn-outline-primary btn-sm text-start" 
-                                onclick="quickQuestion('¿Cuánto tiempo cocinar pasta al dente?')">
-                            🍝 ¿Cuánto tiempo cocinar pasta al dente?
+                                onclick="quickQuestion('¿Cómo hacer un roux para salsas?')">
+                            🥄 ¿Cómo hacer un roux para salsas?
                         </button>
                         <button class="btn btn-outline-primary btn-sm text-start" 
-                                onclick="quickQuestion('¿Cómo hacer que mi comida sea más saludable?')">
-                            🥗 ¿Cómo hacer comida más saludable?
+                                onclick="quickQuestion('¿Cuáles son los cortes básicos de cuchillo?')">
+                            🔪 Cortes básicos de cuchillo
                         </button>
                         <button class="btn btn-outline-primary btn-sm text-start" 
-                                onclick="quickQuestion('¿Qué especias van bien con el pollo?')">
-                            🌶️ ¿Qué especias van bien con el pollo?
+                                onclick="quickQuestion('¿Cómo hacer una salsa madre bechamel?')">
+                            🥛 Salsa madre bechamel
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm text-start" 
+                                onclick="quickQuestion('¿Qué es el método en papillote?')">
+                            📄 Cocción en papillote
                         </button>
                     </div>
                 </div>
             </div>
             
-            <!-- Consejos del día -->
+            <!-- Métodos de Cocción -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-thermometer-half text-info me-2"></i>
+                        Métodos de Cocción
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-info btn-sm text-start" 
+                                onclick="quickQuestion('¿Cuál es la diferencia entre hervir y pochar?')">
+                            💧 Hervir vs Pochar
+                        </button>
+                        <button class="btn btn-outline-info btn-sm text-start" 
+                                onclick="quickQuestion('¿Cómo cocinar al vapor correctamente?')">
+                            ♨️ Cocción al vapor
+                        </button>
+                        <button class="btn btn-outline-info btn-sm text-start" 
+                                onclick="quickQuestion('¿Qué temperaturas usar para asar?')">
+                            🔥 Temperaturas para asar
+                        </button>
+                        <button class="btn btn-outline-info btn-sm text-start" 
+                                onclick="quickQuestion('¿Cómo hacer un confitado perfecto?')">
+                            🦆 Técnica de confitado
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Troubleshooting -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools text-warning me-2"></i>
+                        Solución de Problemas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning btn-sm text-start" 
+                                onclick="quickQuestion('Se me cortó la mayonesa, ¿cómo la arreglo?')">
+                            😱 Mayonesa cortada
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm text-start" 
+                                onclick="quickQuestion('Mi salsa está muy líquida, ¿cómo la espeso?')">
+                            💧 Espesar salsas
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm text-start" 
+                                onclick="quickQuestion('Se me quemó la comida, ¿puedo salvarla?')">
+                            🔥 Comida quemada
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm text-start" 
+                                onclick="quickQuestion('La masa no levanta, ¿qué hago?')">
+                            🍞 Problemas con masa
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Consejo del día -->
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar-day text-info me-2"></i>
-                        Consejo del Día
+                        Técnica del Día
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="text-center">
-                        <i class="fas fa-thermometer-half fa-2x text-warning mb-3"></i>
-                        <h6>Temperatura Perfecta</h6>
+                        <i class="fas fa-cut fa-2x text-warning mb-3"></i>
+                        <h6>Corte Brunoise</h6>
                         <p class="small text-muted mb-0">
-                            Para obtener el mejor sabor en carnes, usa un termómetro: 
-                            pollo 75°C, carne de res 60°C para término medio.
+                            Corte en dados de 1-2mm. Ideal para verduras aromáticas. 
+                            Técnica: cortes paralelos → perpendiculares → transversales.
                         </p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Recetas sugeridas -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-star text-warning me-2"></i>
-                        Recetas Populares
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item border-0 px-0">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">Pasta Carbonara</h6>
-                                    <small class="text-muted">⭐ 4.8 • 25 min</small>
-                                </div>
-                                <button class="btn btn-outline-primary btn-sm" 
-                                        onclick="quickQuestion('¿Cómo hacer pasta carbonara perfecta?')">
-                                    Preguntar
-                                </button>
-                            </div>
-                        </div>
-                        <div class="list-group-item border-0 px-0">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">Pollo al Curry</h6>
-                                    <small class="text-muted">⭐ 4.6 • 35 min</small>
-                                </div>
-                                <button class="btn btn-outline-primary btn-sm" 
-                                        onclick="quickQuestion('¿Cuáles son los secretos del curry?')">
-                                    Preguntar
-                                </button>
-                            </div>
-                        </div>
-                        <div class="list-group-item border-0 px-0">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">Ensalada César</h6>
-                                    <small class="text-muted">⭐ 4.5 • 15 min</small>
-                                </div>
-                                <button class="btn btn-outline-primary btn-sm" 
-                                        onclick="quickQuestion('¿Cómo hacer aderezo césar casero?')">
-                                    Preguntar
-                                </button>
-                            </div>
-                        </div>
+                        <button class="btn btn-outline-primary btn-sm mt-2" 
+                                onclick="quickQuestion('¿Cómo hacer el corte brunoise paso a paso?')">
+                            Aprender técnica
+                        </button>
                     </div>
                 </div>
             </div>
@@ -202,8 +222,8 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-info-circle text-info me-2"></i>
-                        Sobre el Asistente
+                        <i class="fas fa-graduation-cap text-info me-2"></i>
+                        Chef AI Especializado
                     </h5>
                 </div>
                 <div class="card-body">
@@ -212,26 +232,26 @@
                             <div class="bg-light rounded p-2">
                                 <i class="fas fa-brain fa-lg text-primary"></i>
                                 <div class="mt-1">
-                                    <small class="fw-bold">IA Avanzada</small>
-                                    <div class="small text-muted">Procesamiento NLP</div>
+                                    <small class="fw-bold">IA Culinaria</small>
+                                    <div class="small text-muted">Especializada</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="bg-light rounded p-2">
-                                <i class="fas fa-database fa-lg text-success"></i>
+                                <i class="fas fa-book-open fa-lg text-success"></i>
                                 <div class="mt-1">
-                                    <small class="fw-bold">1000+ Recetas</small>
+                                    <small class="fw-bold">500+ Técnicas</small>
                                     <div class="small text-muted">Base de datos</div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="bg-light rounded p-2">
-                                <i class="fas fa-clock fa-lg text-warning"></i>
+                                <i class="fas fa-chef-hat fa-lg text-warning"></i>
                                 <div class="mt-1">
-                                    <small class="fw-bold">24/7</small>
-                                    <div class="small text-muted">Disponible</div>
+                                    <small class="fw-bold">Chef Experto</small>
+                                    <div class="small text-muted">Nivel Profesional</div>
                                 </div>
                             </div>
                         </div>
@@ -240,7 +260,7 @@
                                 <i class="fas fa-language fa-lg text-info"></i>
                                 <div class="mt-1">
                                     <small class="fw-bold">Español</small>
-                                    <div class="small text-muted">Nativo</div>
+                                    <div class="small text-muted">Técnico</div>
                                 </div>
                             </div>
                         </div>
@@ -250,9 +270,9 @@
                     
                     <div class="alert alert-info py-2 mb-0" role="alert">
                         <small>
-                            <i class="fas fa-magic me-1"></i>
-                            <strong>Tip:</strong> Puedes preguntarme sobre técnicas culinarias, 
-                            sustitutos de ingredientes, tiempos de cocción y mucho más.
+                            <i class="fas fa-lightbulb me-1"></i>
+                            <strong>Tip:</strong> Soy especialista en técnicas culinarias profesionales. 
+                            Pregúntame sobre métodos específicos, cortes, cocciones y soluciones a problemas.
                         </small>
                     </div>
                 </div>
@@ -265,6 +285,224 @@
 {% block extra_js %}
 <script>
     let messageCount = 0;
+    
+    // BASE DE CONOCIMIENTO CULINARIO EXPANDIDA
+    const culinaryKnowledge = {
+        // TÉCNICAS BÁSICAS
+        'sofrito': {
+            keywords: ['sofrito', 'sofreir', 'sofríe', 'base aromática'],
+            response: `🧄 <strong>SOFRITO PERFECTO:</strong><br><br>
+                <strong>Técnica fundamental:</strong><br>
+                1. <strong>Temperatura:</strong> Fuego medio-bajo<br>
+                2. <strong>Aceite:</strong> Cubrir el fondo de la sartén<br>
+                3. <strong>Orden:</strong> Cebolla → Ajo → Tomate<br>
+                4. <strong>Tiempo:</strong> Cebolla translúcida (5-7 min)<br>
+                5. <strong>Ajo:</strong> Solo 30-60 segundos (no quemar)<br>
+                6. <strong>Tomate:</strong> Hasta que pierda agua (3-4 min)<br><br>
+                ⚠️ <strong>Error común:</strong> Fuego alto quema el ajo<br>
+                ✅ <strong>Secreto:</strong> Paciencia y fuego controlado`
+        },
+        
+        'braseado': {
+            keywords: ['braseado', 'brasear', 'braise'],
+            response: `🍖 <strong>BRASEADO - TÉCNICA PROFESIONAL:</strong><br><br>
+                <strong>Definición:</strong> Cocción mixta (seco + húmedo)<br><br>
+                <strong>Proceso paso a paso:</strong><br>
+                1. <strong>Sellado:</strong> Dorar la carne a fuego alto<br>
+                2. <strong>Aromáticos:</strong> Agregar mirepoix (cebolla, zanahoria, apio)<br>
+                3. <strong>Deglasar:</strong> Vino o caldo para soltar los sabores<br>
+                4. <strong>Líquido:</strong> Cubrir 2/3 partes de la carne<br>
+                5. <strong>Horno:</strong> 160°C, cocción lenta 2-3 horas<br><br>
+                🎯 <strong>Ideal para:</strong> Cortes duros con colágeno<br>
+                🥩 <strong>Carnes perfectas:</strong> Ossobuco, costillas, paleta`
+        },
+        
+        'roux': {
+            keywords: ['roux', 'espesar', 'harina mantequilla'],
+            response: `🥄 <strong>ROUX - BASE DE SALSAS:</strong><br><br>
+                <strong>Proporción:</strong> 1:1 mantequilla y harina<br><br>
+                <strong>Tipos por cocción:</strong><br>
+                • <strong>Blanco:</strong> 2-3 min (salsas blancas)<br>
+                • <strong>Rubio:</strong> 5-6 min (velouté)<br>
+                • <strong>Oscuro:</strong> 15-20 min (salsas oscuras)<br><br>
+                <strong>Técnica:</strong><br>
+                1. Derretir mantequilla a fuego medio<br>
+                2. Agregar harina gradualmente<br>
+                3. Cocinar sin parar de remover<br>
+                4. Incorporar líquido tibio de a poco<br><br>
+                ⚠️ <strong>Error:</strong> Agregar líquido frío causa grumos`
+        },
+        
+        'cortes': {
+            keywords: ['cortes', 'cuchillo', 'juliana', 'brunoise', 'chiffonade'],
+            response: `🔪 <strong>CORTES BÁSICOS DE CUCHILLO:</strong><br><br>
+                <strong>Cortes fundamentales:</strong><br>
+                • <strong>Brunoise:</strong> Dados 1-2mm (aromat. finas)<br>
+                • <strong>Juliana:</strong> Bastones 2mm x 5cm (guarnición)<br>
+                • <strong>Chiffonade:</strong> Tiras finas de hojas<br>
+                • <strong>Mirepoix:</strong> Dados irregulares 1cm<br>
+                • <strong>Paisana:</strong> Dados regulares 1.5cm<br><br>
+                <strong>Técnica segura:</strong><br>
+                ✅ Dedos curvados (garra)<br>
+                ✅ Cuchillo siempre perpendicular<br>
+                ✅ Movimiento basculante<br>
+                ✅ Tabla estable y antideslizante`
+        },
+        
+        'bechamel': {
+            keywords: ['bechamel', 'besamel', 'salsa madre', 'salsa blanca'],
+            response: `🥛 <strong>BECHAMEL - SALSA MADRE:</strong><br><br>
+                <strong>Ingredientes base:</strong><br>
+                • 40g mantequilla<br>
+                • 40g harina<br>
+                • 500ml leche tibia<br>
+                • Nuez moscada, sal, pimienta<br><br>
+                <strong>Técnica profesional:</strong><br>
+                1. <strong>Roux blanco:</strong> Mantequilla + harina 3 min<br>
+                2. <strong>Leche tibia:</strong> Incorporar de a poco<br>
+                3. <strong>Batir constantemente</strong> evitar grumos<br>
+                4. <strong>Cocinar 10-15 min</strong> hasta espesar<br>
+                5. <strong>Condimentar</strong> al final<br><br>
+                📏 <strong>Consistencia:</strong> Cubre la cuchara sin gotear<br>
+                🎯 <strong>Usos:</strong> Lasañas, gratinados, croquetas`
+        },
+        
+        'papillote': {
+            keywords: ['papillote', 'papel', 'sobre', 'vapor'],
+            response: `📄 <strong>COCCIÓN EN PAPILLOTE:</strong><br><br>
+                <strong>Técnica francesa:</strong> Cocción al vapor en sobre<br><br>
+                <strong>Materiales:</strong><br>
+                • Papel sulfurizado (pergamino)<br>
+                • Papel aluminio (alternativa)<br><br>
+                <strong>Proceso:</strong><br>
+                1. <strong>Cortar papel</strong> en corazón grande<br>
+                2. <strong>Aceitar ligeramente</strong> una mitad<br>
+                3. <strong>Colocar alimento</strong> centrado<br>
+                4. <strong>Agregar aromáticos</strong> (hierbas, vino)<br>
+                5. <strong>Cerrar herméticamente</strong> doblando bordes<br>
+                6. <strong>Horno 180°C</strong> 15-25 min según grosor<br><br>
+                🐟 <strong>Perfecto para:</strong> Pescados, verduras, pollo<br>
+                ✨ <strong>Ventaja:</strong> Conserva jugos y aromas`
+        },
+        
+        'confitado': {
+            keywords: ['confitado', 'confit', 'grasa', 'pato'],
+            response: `🦆 <strong>TÉCNICA CONFIT:</strong><br><br>
+                <strong>Definición:</strong> Cocción lenta en grasa propia<br><br>
+                <strong>Temperatura:</strong> 60-70°C (muy baja)<br>
+                <strong>Tiempo:</strong> 2-8 horas según producto<br><br>
+                <strong>Proceso para pato:</strong><br>
+                1. <strong>Curado:</strong> Sal gruesa + hierbas 24h<br>
+                2. <strong>Limpiar sal</strong> y secar bien<br>
+                3. <strong>Sumergir en grasa</strong> de pato derretida<br>
+                4. <strong>Horno 65°C</strong> por 6-8 horas<br>
+                5. <strong>Conservar en grasa</strong> hasta uso<br><br>
+                🥔 <strong>Variante vegetal:</strong> Ajo confitado en aceite<br>
+                📦 <strong>Conservación:</strong> Meses en refrigeración`
+        }
+    };
+    
+    // KNOWLEDGE BASE EXTENDIDA
+    const extendedKnowledge = {
+        // MÉTODOS DE COCCIÓN
+        'hervir': {
+            keywords: ['hervir', 'hervido', 'ebullición', 'agua hirviendo'],
+            response: `💧 <strong>HERVIR vs POCHAR:</strong><br><br>
+                <strong>HERVIR (100°C):</strong><br>
+                • Burbujeo vigoroso constante<br>
+                • Para: pasta, verduras duras, blanquear<br>
+                • Tiempo: rápido pero puede arruinar textura<br><br>
+                <strong>POCHAR (80-90°C):</strong><br>
+                • Burbujeo suave, casi sin movimiento<br>
+                • Para: huevos, pescado delicado, frutas<br>
+                • Resultado: textura sedosa y delicada<br><br>
+                <strong>COCCIÓN AL VAPOR:</strong><br>
+                • Vaporera o colador sobre agua hirviendo<br>
+                • Conserva nutrientes y sabores puros<br>
+                • Tiempo: 20-30% más que hervido`
+        },
+        
+        'asar': {
+            keywords: ['asar', 'horno', 'temperatura', 'asado'],
+            response: `🔥 <strong>TEMPERATURAS PARA ASAR:</strong><br><br>
+                <strong>CARNES:</strong><br>
+                • <strong>Aves:</strong> 180-200°C (temp. interna 75°C)<br>
+                • <strong>Cerdo:</strong> 160-180°C (temp. interna 70°C)<br>
+                • <strong>Cordero:</strong> 200°C inicial → 160°C<br>
+                • <strong>Res:</strong> 220°C sellado → 180°C terminar<br><br>
+                <strong>VERDURAS:</strong><br>
+                • <strong>Raíces:</strong> 200°C 30-45 min<br>
+                • <strong>Calabazas:</strong> 180°C 25-35 min<br>
+                • <strong>Tomates:</strong> 150°C 20-30 min<br><br>
+                🌡️ <strong>Tip profesional:</strong> Termómetro de cocina<br>
+                ⏰ <strong>Reposo:</strong> Carnes 5-10 min antes cortar`
+        },
+        
+        // TROUBLESHOOTING
+        'mayonesa': {
+            keywords: ['mayonesa', 'cortada', 'cortó', 'arreglar'],
+            response: `😱 <strong>REPARAR MAYONESA CORTADA:</strong><br><br>
+                <strong>Método de rescate:</strong><br>
+                1. <strong>Bowl limpio</strong> + 1 yema nueva<br>
+                2. <strong>Batir la yema</strong> hasta cremosa<br>
+                3. <strong>Agregar mayo cortada</strong> gota a gota<br>
+                4. <strong>Batir constantemente</strong> hasta emulsionar<br><br>
+                <strong>Prevención para la próxima:</strong><br>
+                ✅ Ingredientes a temperatura ambiente<br>
+                ✅ Aceite de a poco (hilo fino)<br>
+                ✅ Batir constantemente<br>
+                ✅ No más de 200ml aceite por yema<br><br>
+                🥚 <strong>Alternativa:</strong> Usar batidora de inmersión`
+        },
+        
+        'salsas': {
+            keywords: ['salsa', 'líquida', 'espesar', 'aguada'],
+            response: `💧 <strong>ESPESAR SALSAS - MÉTODOS:</strong><br><br>
+                <strong>ESPESANTES INSTANTÁNEOS:</strong><br>
+                • <strong>Maicena:</strong> Disolver en agua fría primero<br>
+                • <strong>Harina:</strong> Mezclar con mantequilla (beurre manié)<br>
+                • <strong>Crema:</strong> Reduce y espesa naturalmente<br><br>
+                <strong>MÉTODOS DE REDUCCIÓN:</strong><br>
+                • <strong>Fuego medio:</strong> Evaporar agua concentrando<br>
+                • <strong>Sin tapa:</strong> Permitir evaporación<br>
+                • <strong>Tiempo:</strong> Paciencia para consistencia perfecta<br><br>
+                <strong>ESPESANTES NATURALES:</strong><br>
+                • <strong>Yemas:</strong> Templar y agregar al final<br>
+                • <strong>Puré verduras:</strong> Licuar parte de la salsa`
+        },
+        
+        'quemado': {
+            keywords: ['quemado', 'quemó', 'negro', 'salvar'],
+            response: `🔥 <strong>RESCATAR COMIDA QUEMADA:</strong><br><br>
+                <strong>EVALUACIÓN INICIAL:</strong><br>
+                🟡 <strong>Ligeramente tostado:</strong> ¡Se puede salvar!<br>
+                🟤 <strong>Marrón oscuro:</strong> Difícil pero posible<br>
+                ⚫ <strong>Negro:</strong> Mejor empezar de nuevo<br><br>
+                <strong>TÉCNICAS DE RESCATE:</strong><br>
+                1. <strong>NO MEZCLAR</strong> - no incorporar lo quemado<br>
+                2. <strong>Cambiar recipiente</strong> inmediatamente<br>
+                3. <strong>Cortar papa cruda</strong> en rodajas (absorbe sabor)<br>
+                4. <strong>Agregar dulce:</strong> Azúcar/miel neutraliza<br>
+                5. <strong>Diluir:</strong> Caldo o agua para reducir intensidad<br><br>
+                ☕ <strong>Para arroces:</strong> Pan tostado encima absorbe olor`
+        },
+        
+        'masa': {
+            keywords: ['masa', 'levadura', 'no levanta', 'pan'],
+            response: `🍞 <strong>MASA QUE NO LEVANTA:</strong><br><br>
+                <strong>DIAGNÓSTICO:</strong><br>
+                ❌ <strong>Levadura muerta:</strong> Agua muy caliente (+40°C)<br>
+                ❌ <strong>Ambiente frío:</strong> Menos de 20°C<br>
+                ❌ <strong>Sal directa:</strong> Mata la levadura<br>
+                ❌ <strong>Poca azúcar:</strong> Levadura necesita alimento<br><br>
+                <strong>SOLUCIONES:</strong><br>
+                1. <strong>Test levadura:</strong> Agua tibia + azúcar + levadura<br>
+                2. <strong>Lugar cálido:</strong> Horno apagado con luz<br>
+                3. <strong>Más tiempo:</strong> Doblar tiempo de levado<br>
+                4. <strong>Agregar levadura:</strong> Nueva porción activada<br><br>
+                🌡️ <strong>Temperatura ideal:</strong> 28-32°C para levado`
+        }
+    };
     
     // Enviar mensaje
     function sendMessage() {
@@ -280,12 +518,12 @@
         input.value = '';
         setLoading(true);
         
-        // Simular respuesta del bot (en producción sería una llamada AJAX)
+        // Simular respuesta del bot (más rápido)
         setTimeout(() => {
-            const response = generateResponse(message);
+            const response = generateAdvancedResponse(message);
             addMessage('bot', response);
             setLoading(false);
-        }, 1000 + Math.random() * 2000);
+        }, 500 + Math.random() * 1000);
     }
     
     // Agregar mensaje al chat
@@ -339,125 +577,163 @@
         messageCount++;
     }
     
-    // Generar respuesta simulada del bot
-    function generateResponse(message) {
+    // Generar respuesta avanzada del bot
+    function generateAdvancedResponse(message) {
         const msg = message.toLowerCase();
         
-        // Respuestas predefinidas basadas en palabras clave
-        if (msg.includes('pollo') && msg.includes('arroz')) {
-            return `🍗 ¡Excelente combinación! Te sugiero:<br><br>
-                    <strong>Arroz con Pollo Clásico:</strong><br>
-                    • Sofríe el pollo con ajo y cebolla<br>
-                    • Agrega arroz y caldo de pollo<br>
-                    • Cocina 18-20 minutos a fuego medio<br>
-                    • Añade verduras para más color y nutrición<br><br>
-                    💡 <em>Tip:</em> Usa azafrán para dar color dorado y sabor especial.`;
+        // Buscar en base de conocimiento principal
+        for (const [key, data] of Object.entries(culinaryKnowledge)) {
+            if (data.keywords.some(keyword => msg.includes(keyword))) {
+                return data.response;
+            }
         }
         
-        if (msg.includes('huevo') && (msg.includes('vegano') || msg.includes('sustituir'))) {
-            return `🥚➡️🌱 Sustitutos veganos para huevos:<br><br>
-                    <strong>Para hornear:</strong><br>
-                    • 1 tbsp linaza molida + 3 tbsp agua (reposar 5 min)<br>
-                    • 1/4 taza aquafaba (líquido de garbanzos)<br>
-                    • 1/4 taza puré de manzana<br><br>
-                    <strong>Para ligar:</strong><br>
-                    • Harina de garbanzo + agua<br>
-                    • Tofu suave desmenuzado<br><br>
-                    ✨ <em>Cada sustituto tiene propiedades diferentes!</em>`;
+        // Buscar en base de conocimiento extendida
+        for (const [key, data] of Object.entries(extendedKnowledge)) {
+            if (data.keywords.some(keyword => msg.includes(keyword))) {
+                return data.response;
+            }
         }
         
-        if (msg.includes('pasta') && msg.includes('dente')) {
-            return `🍝 Pasta al dente perfecta:<br><br>
-                    <strong>Regla general:</strong> Tiempo del paquete - 1 minuto<br><br>
-                    <strong>Pasos:</strong><br>
-                    1. Agua hirviendo con sal abundante<br>
-                    2. Agregar pasta cuando burbujee fuerte<br>
-                    3. Revolver ocasionalmente<br>
-                    4. Probar 1-2 min antes del tiempo indicado<br>
-                    5. Debe quedar firme al morder<br><br>
-                    🧂 <em>Tip:</em> El agua debe saber a "mar" de sal.`;
+        // RECETAS ESPECÍFICAS
+        if (msg.includes('receta') || msg.includes('cocinar')) {
+            if (msg.includes('pollo') && msg.includes('arroz')) {
+                return `🍗 <strong>ARROZ CON POLLO PROFESIONAL:</strong><br><br>
+                        <strong>Técnica del sofrito:</strong><br>
+                        1. Sofrito perfecto: cebolla + ajo + pimiento<br>
+                        2. Dorar pollo en piezas grandes<br>
+                        3. Agregar tomate rallado<br>
+                        4. Arroz bomba (absorbe mejor)<br>
+                        5. Caldo caliente 3:1 con arroz<br>
+                        6. Azafrán auténtico en hebras<br>
+                        7. NO remover una vez agregado el caldo<br><br>
+                        ⏰ <strong>Cocción:</strong> 18-20 min fuego medio<br>
+                        🔥 <strong>Final:</strong> 2 min fuego alto para socarrat`;
+            }
+            
+            if (msg.includes('pasta')) {
+                return `🍝 <strong>PASTA PERFECTA - TÉCNICA ITALIANA:</strong><br><br>
+                        <strong>Regla 1-10-100:</strong><br>
+                        • 1L agua por 100g pasta<br>
+                        • 10g sal gruesa por litro<br>
+                        • 100g pasta por persona<br><br>
+                        <strong>Proceso profesional:</strong><br>
+                        1. <strong>Agua hirviendo fuerte</strong> antes pasta<br>
+                        2. <strong>Sal cuando hierva</strong> - agua debe saber salada<br>
+                        3. <strong>Pasta de una vez</strong> - no romper espagueti<br>
+                        4. <strong>Remover inicial</strong> evitar pegue<br>
+                        5. <strong>Al dente:</strong> -1 min del paquete<br>
+                        6. <strong>Agua de cocción</strong> para unir con salsa<br><br>
+                        🧈 <strong>Mantecatura:</strong> Pasta + salsa + agua pasta = cremosidad`;
+            }
         }
         
-        if (msg.includes('saludable') || msg.includes('salud')) {
-            return `🥗 Consejos para cocina saludable:<br><br>
-                    <strong>Técnicas:</strong><br>
-                    • Cocinar al vapor, hornear o plancha<br>
-                    • Reducir sal, usar especias y hierbas<br>
-                    • Incluir verduras de colores variados<br><br>
-                    <strong>Ingredientes:</strong><br>
-                    • Granos integrales en lugar de refinados<br>
-                    • Proteínas magras (pescado, pollo sin piel)<br>
-                    • Grasas buenas (aceite oliva, aguacate)<br><br>
-                    💚 <em>Recuerda:</em> Balance y variedad son clave.`;
+        // TÉCNICAS ESPECÍFICAS
+        if (msg.includes('sellado') || msg.includes('sellar')) {
+            return `🔥 <strong>TÉCNICA DE SELLADO:</strong><br><br>
+                    <strong>Objetivo:</strong> Reacción de Maillard = sabor<br><br>
+                    <strong>Técnica correcta:</strong><br>
+                    1. <strong>Sartén bien caliente</strong> - gota agua evapore instantáneo<br>
+                    2. <strong>Proteína seca</strong> - secar con papel absorbente<br>
+                    3. <strong>Aceite punto humo alto</strong> (girasol, canola)<br>
+                    4. <strong>NO mover</strong> 2-3 min por lado<br>
+                    5. <strong>Sonido siseo constante</strong> = temperatura correcta<br><br>
+                    ❌ <strong>Mito:</strong> "Sellar sella jugos" es FALSO<br>
+                    ✅ <strong>Realidad:</strong> Sellado = sabor por Maillard`;
         }
         
-        if (msg.includes('especias') && msg.includes('pollo')) {
-            return `🌶️ Especias perfectas para pollo:<br><br>
-                    <strong>Clásicas:</strong><br>
-                    • Pimentón, orégano, tomillo<br>
-                    • Ajo en polvo, cebolla en polvo<br><br>
-                    <strong>Internacionales:</strong><br>
-                    • Curry (india) • Cinco especias (china)<br>
-                    • Hierbas de Provenza (francesa)<br>
-                    • Cajún (estadounidense)<br><br>
-                    <strong>Marinad básico:</strong><br>
-                    Aceite + limón + ajo + especias elegidas<br><br>
-                    ⏰ <em>Marina al menos 30 minutos.</em>`;
+        if (msg.includes('emulsión') || msg.includes('emulsionar')) {
+            return `🥄 <strong>EMULSIONES - CIENCIA CULINARIA:</strong><br><br>
+                    <strong>Definición:</strong> Unir grasa + agua (inmiscibles)<br><br>
+                    <strong>Emulsionantes naturales:</strong><br>
+                    • <strong>Lecitina:</strong> Yemas de huevo<br>
+                    • <strong>Proteínas:</strong> Mostaza, miel<br>
+                    • <strong>Almidón:</strong> Harina, papa<br><br>
+                    <strong>Técnica profesional:</strong><br>
+                    1. <strong>Temperatura similar</strong> todos ingredientes<br>
+                    2. <strong>Agregar grasa despacio</strong> (hilo fino)<br>
+                    3. <strong>Batido constante</strong> crear fricción<br>
+                    4. <strong>Mantener temperatura</strong> estable<br><br>
+                    🧪 <strong>Ejemplos:</strong> Mayonesa, hollandaise, vinagreta`;
         }
         
-        if (msg.includes('carbonara')) {
-            return `🍝 Carbonara auténtica italiana:<br><br>
-                    <strong>Ingredientes (4 personas):</strong><br>
-                    • 400g espagueti • 4 huevos (solo yemas)<br>
-                    • 150g panceta • 100g queso Pecorino Romano<br>
-                    • Pimienta negra recién molida<br><br>
-                    <strong>Secreto:</strong><br>
-                    ❌ NO lleva nata ni ajo<br>
-                    ✅ El cremoso viene de los huevos y queso<br>
-                    🔥 Mezclar fuera del fuego para no cuajar<br><br>
-                    🇮🇹 <em>¡Receta tradicional romana!</em>`;
+        // INGREDIENTES Y SUSTITUTOS
+        if (msg.includes('sustituir') || msg.includes('reemplazar')) {
+            return `🔄 <strong>SUSTITUTOS INTELIGENTES:</strong><br><br>
+                    <strong>LÁCTEOS:</strong><br>
+                    • Leche → Leche vegetal 1:1<br>
+                    • Mantequilla → Aceite coco 3:4<br>
+                    • Crema → Leche evaporada + limón<br><br>
+                    <strong>HUEVOS (cada uno):</strong><br>
+                    • 1 tbsp linaza + 3 tbsp agua<br>
+                    • 1/4 taza aquafaba<br>
+                    • 1/4 taza puré manzana (postres)<br><br>
+                    <strong>ESPESANTES:</strong><br>
+                    • Harina → Maicena 1:2<br>
+                    • Crema → Leche + roux<br><br>
+                    💡 <strong>Tip:</strong> Cada sustituto cambia textura y sabor`;
         }
         
-        if (msg.includes('curry')) {
-            return `🍛 Secretos del curry perfecto:<br><br>
-                    <strong>Base aromática:</strong><br>
-                    • Sofreír cebolla hasta dorar<br>
-                    • Agregar ajo y jengibre<br>
-                    • Tostar especias 30 segundos<br><br>
-                    <strong>Especias clave:</strong><br>
-                    • Cúrcuma, comino, cilantro molido<br>
-                    • Garam masala, chile en polvo<br><br>
-                    <strong>Tips:</strong><br>
-                    🥥 Leche de coco al final<br>
-                    🍅 Tomate para acidez<br>
-                    ⏰ Cocción lenta = más sabor<br><br>
-                    🌶️ <em>Ajusta picante al gusto.</em>`;
+        // TÉRMINOS TÉCNICOS
+        if (msg.includes('mirepoix')) {
+            return `🥕 <strong>MIREPOIX - BASE AROMÁTICA:</strong><br><br>
+                    <strong>Proporción clásica:</strong><br>
+                    • 50% cebolla<br>
+                    • 25% zanahoria<br>
+                    • 25% apio<br><br>
+                    <strong>Corte:</strong> Dados irregulares 1-1.5cm<br>
+                    <strong>Uso:</strong> Base caldos, guisos, salsas<br>
+                    <strong>Cocción:</strong> Sudar sin color 10-15 min<br><br>
+                    🇫🇷 <strong>Variantes:</strong><br>
+                    • <strong>Matignon:</strong> + jamón<br>
+                    • <strong>Cajún:</strong> Cebolla + apio + pimiento`;
         }
         
-        if (msg.includes('aderezo') && msg.includes('césar')) {
-            return `🥗 Aderezo César casero:<br><br>
-                    <strong>Ingredientes:</strong><br>
-                    • 2 yemas de huevo • 2 dientes ajo<br>
-                    • 4 anchoas • Jugo 1 limón<br>
-                    • 1/2 taza aceite oliva • Queso parmesano<br><br>
+        if (msg.includes('bouquet garni')) {
+            return `🌿 <strong>BOUQUET GARNI:</strong><br><br>
+                    <strong>Hierbas clásicas:</strong><br>
+                    • Tomillo fresco<br>
+                    • Laurel<br>
+                    • Perejil (tallos)<br>
+                    • Apio (hojas)<br><br>
                     <strong>Preparación:</strong><br>
-                    1. Machacar ajo y anchoas<br>
-                    2. Batir yemas con limón<br>
-                    3. Agregar aceite lentamente<br>
-                    4. Incorporar queso y sazonar<br><br>
-                    🧄 <em>El ajo crudo le da el toque auténtico.</em>`;
+                    1. Atar con hilo de cocina<br>
+                    2. O envolver en gasa<br>
+                    3. Fácil retiro al final<br><br>
+                    ⏰ <strong>Tiempo:</strong> Último 30 min cocción<br>
+                    🍲 <strong>Uso:</strong> Caldos, estofados, braises`;
         }
         
-        // Respuesta genérica si no hay coincidencias
-        const genericResponses = [
-            `🤔 Interesante pregunta sobre cocina. Te recomiendo ser más específico para darte una respuesta detallada. <br><br>¿Podrías contarme más detalles? Por ejemplo:<br>• ¿Qué ingredientes tienes?<br>• ¿Qué tipo de cocina prefieres?<br>• ¿Tienes alguna restricción dietética?`,
+        // RESPUESTAS MOTIVACIONALES
+        const motivationalResponses = [
+            `👨‍🍳 <strong>¡Excelente pregunta culinaria!</strong><br><br>
+             Me especializo en técnicas profesionales. Para darte la mejor respuesta, ¿podrías ser más específico?<br><br>
+             Por ejemplo:<br>
+             • "¿Cómo hacer un sofrito perfecto?"<br>
+             • "¿Qué temperatura para asar pollo?"<br>
+             • "¿Cómo arreglar salsa cortada?"<br>
+             • "¿Cuál es la técnica del braseado?"<br><br>
+             🎯 <strong>Soy experto en:</strong> Técnicas, métodos, troubleshooting y ciencia culinaria`,
             
-            `👨‍🍳 Como chef virtual, necesito más información para ayudarte mejor. <br><br>Puedo asistirte con:<br>• Recetas específicas<br>• Técnicas de cocina<br>• Sustitutos de ingredientes<br>• Información nutricional<br><br>¿Sobre cuál te gustaría saber?`,
+            `🔧 <strong>Chef AI a tu servicio</strong><br><br>
+             Para ayudarte mejor, necesito más detalles específicos sobre:<br><br>
+             🔥 <strong>Técnicas:</strong> sofrito, braseado, confitado<br>
+             🔪 <strong>Cortes:</strong> brunoise, juliana, chiffonade<br>
+             🍳 <strong>Métodos:</strong> sellado, emulsión, reducción<br>
+             ⚠️ <strong>Problemas:</strong> salsas cortadas, masa que no levanta<br><br>
+             💬 <strong>Ejemplo:</strong> "Mi mayonesa se cortó, ¿cómo la arreglo?"`,
             
-            `🍳 ¡Me encanta hablar de cocina! Para darte la mejor respuesta, comparte conmigo:<br><br>• ¿Es sobre una receta específica?<br>• ¿Necesitas consejos de técnica?<br>• ¿Buscas opciones saludables?<br>• ¿Tienes ingredientes específicos?<br><br>¡Estoy aquí para ayudarte!`
+            `🎓 <strong>Profesor de técnicas culinarias</strong><br><br>
+             Mi especialidad son los fundamentos técnicos de la cocina profesional.<br><br>
+             📚 <strong>Puedo enseñarte:</strong><br>
+             • Métodos de cocción científicos<br>
+             • Técnicas de preparación francesas<br>
+             • Solución de problemas culinarios<br>
+             • Ciencia detrás de cada proceso<br><br>
+             🤔 <strong>¿Qué técnica específica te interesa dominar?</strong>`
         ];
         
-        return genericResponses[Math.floor(Math.random() * genericResponses.length)];
+        return motivationalResponses[Math.floor(Math.random() * motivationalResponses.length)];
     }
     
     // Manejar Enter en el input
@@ -503,6 +779,20 @@
     // Inicializar
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('message-input').focus();
+        
+        // Mostrar mensaje de bienvenida con técnicas
+        setTimeout(() => {
+            addMessage('bot', `
+                <strong>💡 EJEMPLOS DE PREGUNTAS ESPECÍFICAS:</strong><br><br>
+                🔥 "¿Cómo hacer un sofrito perfecto?"<br>
+                🥩 "¿Qué es el braseado paso a paso?"<br>
+                🔪 "¿Cuáles son los cortes básicos de cuchillo?"<br>
+                🍝 "¿Cómo emulsionar una salsa correctamente?"<br>
+                😱 "Se me cortó la mayonesa, ¿cómo la arreglo?"<br>
+                🌡️ "¿Qué temperaturas usar para asar carne?"<br><br>
+                <em>¡Pregúntame cualquier técnica culinaria específica!</em>
+            `);
+        }, 2000);
     });
 </script>
 {% endblock %}
