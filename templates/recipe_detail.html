@@ -4,13 +4,6 @@
 
 {% block extra_css %}
 <style>
-    /* FORZAR VISIBILIDAD PERMANENTE */
-    .cooking-tips, #cooking-tips-section, .nutrition-card, #nutrition-card {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
     .instruction-step {
         background: #f8f9fa;
         border-left: 4px solid #007bff;
@@ -30,6 +23,24 @@
         justify-content: center;
         font-weight: bold;
         margin-right: 15px;
+        flex-shrink: 0;
+    }
+    
+    .step-content {
+        flex: 1;
+        line-height: 1.6;
+    }
+    
+    /* FORZAR VISIBILIDAD PERMANENTE */
+    .cooking-tips, 
+    #cooking-tips-section, 
+    .nutrition-card, 
+    #nutrition-card,
+    .nutritional-analysis,
+    .cooking-tips-container {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 </style>
 {% endblock %}
@@ -140,7 +151,6 @@
                     {% endif %}
                 </div>
                 
-                <!-- Botón para mostrar sustitutos -->
                 <button class="btn btn-outline-primary btn-sm mt-2" 
                         onclick="showSubstitutions()" id="substitutions-btn">
                     <i class="fas fa-exchange-alt"></i> Ver Sustitutos
@@ -195,40 +205,105 @@
                 </div>
             </div>
             
-            <!-- Instrucciones CORREGIDAS -->
+            <!-- Sección de instrucciones SIN filtros regex -->
             <div class="instructions-list mb-4">
                 <h3 class="mb-3">
                     <i class="fas fa-list-ol text-primary me-2"></i>
                     Instrucciones
                 </h3>
+                
                 {% if recipe.instructions %}
-                    {% set clean_instructions = recipe.instructions.replace('\n', ' ').replace('  ', ' ') %}
-                    {% set steps = clean_instructions.split('.') %}
-                    {% for step in steps %}
-                        {% if step.strip() and step.strip()|length > 10 %}
+                    {% set clean_instructions = recipe.instructions.strip() %}
+                    {% if clean_instructions %}
+                        <!-- Método simple: dividir por saltos de línea primero -->
+                        {% if '\n' in clean_instructions %}
+                            {% set raw_steps = clean_instructions.split('\n') %}
+                        {% else %}
+                            <!-- Si no hay saltos de línea, dividir por puntos -->
+                            {% set raw_steps = clean_instructions.split('.') %}
+                        {% endif %}
+                        
+                        {% set step_counter = [] %}
+                        {% for step in raw_steps %}
+                            {% set clean_step = step.strip() %}
+                            {% if clean_step and clean_step|length > 15 %}
+                                {% set _ = step_counter.append(1) %}
+                                {% set step_number = step_counter|length %}
+                                
+                                <div class="instruction-step">
+                                    <div class="d-flex align-items-start">
+                                        <span class="step-number">{{ step_number }}</span>
+                                        <div class="step-content">
+                                            <!-- Limpiar números al inicio de forma simple -->
+                                            {% set final_step = clean_step %}
+                                            {% if clean_step.startswith('1.') or clean_step.startswith('2.') or clean_step.startswith('3.') or clean_step.startswith('4.') or clean_step.startswith('5.') or clean_step.startswith('6.') or clean_step.startswith('7.') or clean_step.startswith('8.') or clean_step.startswith('9.') %}
+                                                {% set final_step = clean_step[2:].strip() %}
+                                            {% elif clean_step.startswith('10.') or clean_step.startswith('11.') or clean_step.startswith('12.') %}
+                                                {% set final_step = clean_step[3:].strip() %}
+                                            {% endif %}
+                                            
+                                            <!-- Capitalizar primera letra -->
+                                            {% if final_step %}
+                                                {% set first_char = final_step[0].upper() %}
+                                                {% set rest_chars = final_step[1:] %}
+                                                {% set capitalized_step = first_char + rest_chars %}
+                                            {% else %}
+                                                {% set capitalized_step = final_step %}
+                                            {% endif %}
+                                            
+                                            <!-- Asegurar que termine con punto -->
+                                            {% if capitalized_step and not capitalized_step.endswith('.') %}
+                                                {{ capitalized_step }}.
+                                            {% else %}
+                                                {{ capitalized_step }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <!-- Si no se generaron pasos válidos, mostrar instrucciones completas -->
+                        {% if step_counter|length == 0 %}
+                            <div class="instruction-step">
+                                <div class="d-flex align-items-start">
+                                    <span class="step-number">1</span>
+                                    <div class="step-content">
+                                        {{ clean_instructions }}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
                         <div class="instruction-step">
                             <div class="d-flex align-items-start">
-                                <span class="step-number">{{ loop.index }}</span>
+                                <span class="step-number">1</span>
                                 <div class="step-content">
-                                    {{ step.strip().capitalize() }}.
+                                    Sigue las instrucciones básicas de preparación para esta receta.
                                 </div>
                             </div>
                         </div>
-                        {% endif %}
-                    {% endfor %}
+                    {% endif %}
                 {% else %}
-                <p class="text-muted">No hay instrucciones disponibles para esta receta.</p>
+                    <div class="instruction-step">
+                        <div class="d-flex align-items-start">
+                            <span class="step-number">1</span>
+                            <div class="step-content">
+                                Las instrucciones detalladas se proporcionarán próximamente.
+                            </div>
+                        </div>
+                    </div>
                 {% endif %}
             </div>
             
-            <!-- Consejos de Cocina - SIEMPRE VISIBLES CON CSS FORZADO -->
-            <div class="cooking-tips mb-4" id="cooking-tips-section">
+            <!-- Consejos de Cocina - SIEMPRE VISIBLES -->
+            <div class="cooking-tips cooking-tips-container mb-4" id="cooking-tips-section">
                 <h4 class="mb-3">
                     <i class="fas fa-lightbulb text-warning me-2"></i>
                     Consejos del Chef
                 </h4>
-                <div class="row">
-                    {% if cooking_tips %}
+                <div class="row" id="cooking-tips-content">
+                    {% if cooking_tips and cooking_tips|length > 0 %}
                         {% for tip in cooking_tips %}
                         <div class="col-md-6 mb-3">
                             <div class="alert alert-info py-3">
@@ -239,7 +314,14 @@
                         </div>
                         {% endfor %}
                     {% else %}
-                        <!-- Consejos por defecto si no hay -->
+                        <!-- Consejos por defecto basados en ingredientes -->
+                        {% set ingredient_names = [] %}
+                        {% for ingredient in recipe.ingredients %}
+                            {% set _ = ingredient_names.append(ingredient.name.lower()) %}
+                        {% endfor %}
+                        {% set ingredients_text = ' '.join(ingredient_names) %}
+                        
+                        <!-- Consejo 1: General -->
                         <div class="col-md-6 mb-3">
                             <div class="alert alert-info py-3">
                                 <i class="fas fa-chef-hat me-2 text-primary"></i>
@@ -247,6 +329,8 @@
                                 <small>Lee toda la receta antes de empezar a cocinar</small>
                             </div>
                         </div>
+                        
+                        <!-- Consejo 2: Mise en place -->
                         <div class="col-md-6 mb-3">
                             <div class="alert alert-info py-3">
                                 <i class="fas fa-utensils me-2 text-primary"></i>
@@ -254,18 +338,42 @@
                                 <small>Prepara todos los ingredientes antes de comenzar</small>
                             </div>
                         </div>
+                        
+                        <!-- Consejo 3: Específico por ingrediente -->
                         <div class="col-md-6 mb-3">
                             <div class="alert alert-info py-3">
                                 <i class="fas fa-clock me-2 text-primary"></i>
                                 <strong>Consejo 3:</strong><br>
-                                <small>Usa un timer para controlar los tiempos de cocción</small>
+                                <small>
+                                    {% if 'ajo' in ingredients_text %}
+                                        Aplasta el ajo con el lado plano del cuchillo para pelarlo fácilmente
+                                    {% elif 'cebolla' in ingredients_text %}
+                                        Refrigera la cebolla 30 minutos antes de cortarla para evitar llorar
+                                    {% elif 'arroz' in ingredients_text %}
+                                        Lava el arroz hasta que el agua salga clara
+                                    {% elif 'pollo' in ingredients_text %}
+                                        Asegúrate de que el pollo alcance 75°C de temperatura interna
+                                    {% else %}
+                                        Usa un timer para controlar los tiempos de cocción
+                                    {% endif %}
+                                </small>
                             </div>
                         </div>
+                        
+                        <!-- Consejo 4: Por dificultad -->
                         <div class="col-md-6 mb-3">
                             <div class="alert alert-info py-3">
                                 <i class="fas fa-thermometer me-2 text-primary"></i>
                                 <strong>Consejo 4:</strong><br>
-                                <small>Controla la temperatura para mejores resultados</small>
+                                <small>
+                                    {% if recipe.difficulty == 'difícil' %}
+                                        Tómate tu tiempo y sigue cada paso cuidadosamente
+                                    {% elif recipe.difficulty == 'fácil' %}
+                                        Receta perfecta para principiantes - ¡disfruta cocinando!
+                                    {% else %}
+                                        Controla la temperatura para mejores resultados
+                                    {% endif %}
+                                </small>
                             </div>
                         </div>
                     {% endif %}
@@ -275,8 +383,8 @@
         
         <!-- Sidebar -->
         <div class="col-lg-4">
-            <!-- Información Nutricional - SIEMPRE VISIBLE CON CSS FORZADO -->
-            <div class="card mb-4 nutrition-card" id="nutrition-card">
+            <!-- Información Nutricional - SIEMPRE VISIBLE -->
+            <div class="card mb-4 nutrition-card nutritional-analysis" id="nutrition-card">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-pie me-2"></i>
@@ -313,7 +421,7 @@
                         </table>
                     </div>
                     
-                    <!-- Beneficios nutricionales - SIEMPRE VISIBLES -->
+                    <!-- Beneficios nutricionales -->
                     {% if nutritional_analysis.recommendations %}
                     <hr>
                     <h6 class="mb-2">
@@ -563,45 +671,148 @@
         if (!pdfList.includes(recipeId)) {
             pdfList.push(recipeId);
             localStorage.setItem('pdfRecipes', JSON.stringify(pdfList));
+            if (typeof updatePDFCounter === 'function') {
+                updatePDFCounter();
+            }
             alert('Receta agregada a tu lista de PDF');
         } else {
             alert('Esta receta ya está en tu lista de PDF');
         }
     }
     
-    // ASEGURAR VISIBILIDAD PERMANENTE
+    // FUNCIÓN PRINCIPAL PARA ASEGURAR VISIBILIDAD PERMANENTE
+    function forceElementsVisibility() {
+        // Lista de elementos que deben estar siempre visibles
+        const elementsToShow = [
+            '#cooking-tips-section',
+            '#nutrition-card',
+            '.cooking-tips',
+            '.nutrition-card',
+            '.nutritional-analysis',
+            '.cooking-tips-container',
+            '#cooking-tips-content'
+        ];
+        
+        elementsToShow.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                if (element) {
+                    // Forzar visibilidad con máxima prioridad
+                    element.style.setProperty('display', 'block', 'important');
+                    element.style.setProperty('visibility', 'visible', 'important');
+                    element.style.setProperty('opacity', '1', 'important');
+                    element.style.setProperty('height', 'auto', 'important');
+                    element.style.setProperty('overflow', 'visible', 'important');
+                    
+                    // Remover clases que puedan ocultar
+                    element.classList.remove('d-none', 'hidden', 'hide', 'invisible');
+                    
+                    // Agregar clases de visibilidad
+                    element.classList.add('d-block', 'visible');
+                }
+            });
+        });
+    }
+    
+    // EJECUTAR INMEDIATAMENTE AL CARGAR
     document.addEventListener('DOMContentLoaded', function() {
-        // Forzar visibilidad de consejos y nutrición
+        console.log('🔧 Iniciando corrección de visibilidad...');
+        
+        // Aplicar inmediatamente
+        forceElementsVisibility();
+        
+        // Verificar que los elementos existen
         const cookingTips = document.getElementById('cooking-tips-section');
         const nutritionCard = document.getElementById('nutrition-card');
         
-        if (cookingTips) {
-            cookingTips.style.display = 'block';
-            cookingTips.style.visibility = 'visible';
-            cookingTips.style.opacity = '1';
-            cookingTips.classList.add('cooking-tips');
-        }
+        console.log('📋 Cooking tips elemento:', cookingTips ? 'ENCONTRADO' : 'NO ENCONTRADO');
+        console.log('🍎 Nutrition card elemento:', nutritionCard ? 'ENCONTRADO' : 'NO ENCONTRADO');
         
-        if (nutritionCard) {
-            nutritionCard.style.display = 'block';
-            nutritionCard.style.visibility = 'visible';
-            nutritionCard.style.opacity = '1';
-            nutritionCard.classList.add('nutrition-card');
-        }
+        // Aplicar cada 500ms durante los primeros 10 segundos
+        let attempts = 0;
+        const maxAttempts = 20; // 10 segundos
         
-        // Re-aplicar cada 1 segundo para asegurar permanencia
-        setInterval(function() {
-            if (cookingTips) {
-                cookingTips.style.display = 'block';
-                cookingTips.style.visibility = 'visible';
-                cookingTips.style.opacity = '1';
+        const intervalId = setInterval(() => {
+            attempts++;
+            console.log(`🔄 Aplicando visibilidad - intento ${attempts}`);
+            forceElementsVisibility();
+            
+            if (attempts >= maxAttempts) {
+                clearInterval(intervalId);
+                console.log('✅ Finalizado - elementos deben estar visibles permanentemente');
             }
-            if (nutritionCard) {
-                nutritionCard.style.display = 'block';
-                nutritionCard.style.visibility = 'visible';
-                nutritionCard.style.opacity = '1';
-            }
-        }, 1000);
+        }, 500);
+        
+        // También aplicar en eventos importantes
+        window.addEventListener('scroll', forceElementsVisibility);
+        window.addEventListener('resize', forceElementsVisibility);
+        document.addEventListener('click', forceElementsVisibility);
+        
+        // Crear observer para detectar cambios en el DOM
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' || mutation.type === 'childList') {
+                    forceElementsVisibility();
+                }
+            });
+        });
+        
+        // Observar cambios en el body
+        observer.observe(document.body, {
+            attributes: true,
+            childList: true,
+            subtree: true,
+            attributeFilter: ['style', 'class']
+        });
+        
+        // Aplicar cada 2 segundos permanentemente
+        setInterval(forceElementsVisibility, 2000);
+        
+        console.log('✅ Sistema de visibilidad permanente activado');
     });
+    
+    // APLICAR TAMBIÉN EN WINDOW LOAD COMO BACKUP
+    window.addEventListener('load', function() {
+        setTimeout(forceElementsVisibility, 100);
+        setTimeout(forceElementsVisibility, 500);
+        setTimeout(forceElementsVisibility, 1000);
+    });
+    
+    // CSS ADICIONAL INYECTADO VIA JAVASCRIPT
+    const additionalCSS = `
+        <style id="force-visibility-css">
+            /* REGLAS CSS CON MÁXIMA ESPECIFICIDAD */
+            #cooking-tips-section,
+            .cooking-tips,
+            .cooking-tips-container,
+            #nutrition-card,
+            .nutrition-card,
+            .nutritional-analysis {
+                display: block !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            
+            #cooking-tips-section *,
+            .cooking-tips *,
+            #nutrition-card *,
+            .nutrition-card * {
+                visibility: visible !important;
+            }
+            
+            /* Prevenir ocultamiento accidental */
+            .d-none.cooking-tips,
+            .d-none.nutrition-card,
+            .hidden.cooking-tips,
+            .hidden.nutrition-card {
+                display: block !important;
+            }
+        </style>
+    `;
+    
+    // Inyectar CSS adicional
+    document.head.insertAdjacentHTML('beforeend', additionalCSS);
 </script>
 {% endblock %}

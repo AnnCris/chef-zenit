@@ -1,20 +1,62 @@
+# app/expert_system.py - VERSIÓN CORREGIDA CON ML
 from app.models import Recipe, Ingredient, User, DietaryRestriction, IngredientSubstitution, NutritionalInfo, db
 from sqlalchemy import or_, func
 import re
+import os
+import pickle
 
 class CulinaryExpertSystem:
     def __init__(self):
-        # Configuración simplificada para funcionar con Flask
+        # Configuración con ML integrado
         self.rules = {
             'dietary_restrictions': self._apply_dietary_restrictions,
             'ingredient_matching': self._match_ingredients,
             'time_constraints': self._apply_time_constraints,
             'difficulty_preference': self._apply_difficulty_preference,
         }
+        
+        # Cargar modelos ML si existen
+        self.ml_models = self._load_ml_models()
+        
+    def _load_ml_models(self):
+        """Carga los modelos de ML si están disponibles"""
+        models = {
+            'recommendation_engine': None,
+            'clustering': None,
+            'content_filter': None
+        }
+        
+        try:
+            # Intentar cargar RecommendationEngine
+            from ml_models.recommendation_engine import RecommendationEngine
+            models['recommendation_engine'] = RecommendationEngine()
+            print("✅ RecommendationEngine cargado")
+        except Exception as e:
+            print(f"⚠️ RecommendationEngine no disponible: {e}")
+            
+        try:
+            # Intentar cargar Clustering
+            from ml_models.clustering import RecipeClustering
+            models['clustering'] = RecipeClustering()
+            models['clustering'].load_model('ml_models/trained_models/clustering_model.pkl')
+            print("✅ Clustering cargado")
+        except Exception as e:
+            print(f"⚠️ Clustering no disponible: {e}")
+            
+        try:
+            # Intentar cargar ContentFilter
+            from ml_models.content_filter import ContentBasedFilter
+            models['content_filter'] = ContentBasedFilter()
+            models['content_filter'].load_model('ml_models/trained_models/content_filter_model.pkl')
+            print("✅ ContentFilter cargado")
+        except Exception as e:
+            print(f"⚠️ ContentFilter no disponible: {e}")
+            
+        return models
     
     def get_recommendations(self, user_id, available_ingredients, preferences=None):
         """
-        Motor principal de recomendaciones que aplica las reglas del sistema experto
+        Motor principal de recomendaciones con ML integrado
         """
         print(f"🔍 DEBUG: Buscando recomendaciones para usuario {user_id}")
         print(f"🔍 DEBUG: Ingredientes disponibles: {available_ingredients}")
@@ -24,30 +66,183 @@ class CulinaryExpertSystem:
             print(f"❌ DEBUG: Usuario {user_id} no encontrado")
             return []
         
-        # Procesar ingredientes con NLP básico
+        # Procesar ingredientes
         processed_ingredients = self._process_ingredients_simple(available_ingredients)
         print(f"🔍 DEBUG: Ingredientes procesados: {processed_ingredients}")
         
+        # USAR ML SI ESTÁ DISPONIBLE
+        if self.ml_models['recommendation_engine']:
+            try:
+                print("🧠 Usando RecommendationEngine con ML")
+                return self._get_ml_recommendations(user, processed_ingredients, preferences)
+            except Exception as e:
+                print(f"❌ Error en ML, usando método tradicional: {e}")
+        
+        # Método tradicional como fallback
+        return self._get_traditional_recommendations(user, processed_ingredients, preferences)
+    
+    def _get_ml_recommendations(self, user, ingredients, preferences):
+        """Recomendaciones usando Machine Learning"""
+        try:
+            # Preparar perfil de usuario para ML
+            user_profile = {
+                'dietary_restrictions': [dr.name for dr in user.dietary_restrictions],
+                'avg_rating_given': self._calculate_user_avg_rating(user),
+                'preferred_cuisines': self._get_user_preferred_cuisines(user)
+            }
+            
+            # Obtener datos de recetas para ML
+            recipes_data = self._prepare_recipes_for_ml()
+            
+            # Usar RecommendationEngine
+            ml_recommendations = self.ml_models['recommendation_engine'].get_recommendations(
+                user_profile, ingredients, recipes_data, n_recommendations=10
+            )
+            
+            # Convertir resultados ML a objetos Recipe
+            recommended_recipes = []
+            for rec in ml_recommendations:
+                recipe_id = rec['recipe'].get('id') if isinstance(rec['recipe'], dict) else rec['recipe'].id
+                recipe = Recipe.query.get(recipe_id)
+                if recipe:
+                    recommended_recipes.append(recipe)
+            
+            print(f"✅ ML devolvió {len(recommended_recipes)} recomendaciones")
+            return recommended_recipes
+            
+        except Exception as e:
+            print(f"❌ Error en ML recommendations: {e}")
+            raise e
+    
+    def _get_traditional_recommendations(self, user, ingredients, preferences):
+        """Método tradicional sin ML"""
+        print("🔄 Usando método tradicional (sin ML)")
+        
         # Obtener recetas candidatas
-        candidate_recipes = self._get_candidate_recipes(processed_ingredients)
+        candidate_recipes = self._get_candidate_recipes(ingredients)
         print(f"🔍 DEBUG: Recetas candidatas encontradas: {len(candidate_recipes)}")
         
         if not candidate_recipes:
             print("❌ DEBUG: No se encontraron recetas candidatas")
-            # Si no hay candidatas con ingredientes específicos, obtener todas las recetas
             candidate_recipes = Recipe.query.limit(20).all()
             print(f"🔍 DEBUG: Usando todas las recetas como fallback: {len(candidate_recipes)}")
         
         # Aplicar reglas del sistema experto
-        filtered_recipes = self._apply_expert_rules(candidate_recipes, user, processed_ingredients, preferences)
+        filtered_recipes = self._apply_expert_rules(candidate_recipes, user, ingredients, preferences)
         print(f"🔍 DEBUG: Recetas después de filtros: {len(filtered_recipes)}")
         
         # Rankear por coincidencia de ingredientes y rating
-        ranked_recipes = self._rank_recipes_simple(filtered_recipes, processed_ingredients)
+        ranked_recipes = self._rank_recipes_simple(filtered_recipes, ingredients)
         print(f"🔍 DEBUG: Recetas rankeadas: {len(ranked_recipes)}")
         
-        return ranked_recipes[:10]  # Devolver máximo 10 recomendaciones
+        return ranked_recipes[:10]
     
+    def _prepare_recipes_for_ml(self):
+        """Prepara recetas en formato para ML"""
+        recipes = Recipe.query.all()
+        recipes_data = []
+        
+        for recipe in recipes:
+            recipe_dict = {
+                'id': recipe.id,
+                'name': recipe.name,
+                'description': recipe.description or '',
+                'ingredients': [ing.name for ing in recipe.ingredients],
+                'cuisine_type': recipe.cuisine_type,
+                'difficulty': recipe.difficulty,
+                'prep_time': recipe.prep_time or 30,
+                'cook_time': recipe.cook_time or 30,
+                'servings': recipe.servings or 4,
+                'avg_rating': recipe.average_rating or 3.0,
+                'ratings': [r.rating for r in recipe.ratings]
+            }
+            
+            # Agregar info nutricional si existe
+            if recipe.nutritional_info:
+                recipe_dict['nutritional_info'] = {
+                    'calories_per_serving': recipe.nutritional_info.calories_per_serving or 400,
+                    'protein': recipe.nutritional_info.protein or 15,
+                    'carbs': recipe.nutritional_info.carbs or 50,
+                    'fat': recipe.nutritional_info.fat or 12,
+                    'fiber': recipe.nutritional_info.fiber or 3,
+                    'sugar': recipe.nutritional_info.sugar or 8,
+                    'sodium': recipe.nutritional_info.sodium or 800
+                }
+            
+            recipes_data.append(recipe_dict)
+        
+        return recipes_data
+    
+    def _calculate_user_avg_rating(self, user):
+        """Calcula el rating promedio que da el usuario"""
+        if user.recipe_ratings:
+            return sum(r.rating for r in user.recipe_ratings) / len(user.recipe_ratings)
+        return 4.0
+    
+    def _get_user_preferred_cuisines(self, user):
+        """Obtiene tipos de cocina preferidos del usuario"""
+        if user.user_preferences and user.user_preferences[0].preferred_cuisines:
+            return user.user_preferences[0].preferred_cuisines
+        
+        # Inferir de ratings altos
+        preferred = []
+        for rating in user.recipe_ratings:
+            if rating.rating >= 4 and rating.rated_recipe and rating.rated_recipe.cuisine_type:
+                cuisine = rating.rated_recipe.cuisine_type
+                if cuisine not in preferred:
+                    preferred.append(cuisine)
+        
+        return preferred[:3]  # Top 3
+    
+    def get_similar_recipes_ml(self, recipe_id, n_recommendations=5):
+        """Obtiene recetas similares usando clustering ML"""
+        if not self.ml_models['clustering']:
+            return self._get_similar_recipes_traditional(recipe_id, n_recommendations)
+        
+        try:
+            # Usar clustering ML
+            recipes_data = self._prepare_recipes_for_ml()
+            similar = self.ml_models['clustering'].get_similar_recipes(
+                recipe_id, recipes_data, n_recommendations
+            )
+            
+            # Convertir a objetos Recipe
+            similar_recipes = []
+            for recipe_dict in similar:
+                recipe = Recipe.query.get(recipe_dict['id'])
+                if recipe:
+                    similar_recipes.append(recipe)
+            
+            return similar_recipes
+            
+        except Exception as e:
+            print(f"❌ Error en clustering ML: {e}")
+            return self._get_similar_recipes_traditional(recipe_id, n_recommendations)
+    
+    def _get_similar_recipes_traditional(self, recipe_id, n_recommendations):
+        """Método tradicional para recetas similares"""
+        target_recipe = Recipe.query.get(recipe_id)
+        if not target_recipe:
+            return []
+        
+        # Buscar por mismo tipo de cocina y dificultad similar
+        similar = Recipe.query.filter(
+            Recipe.id != recipe_id,
+            Recipe.cuisine_type == target_recipe.cuisine_type
+        ).limit(n_recommendations).all()
+        
+        if len(similar) < n_recommendations:
+            # Buscar por dificultad similar
+            additional = Recipe.query.filter(
+                Recipe.id != recipe_id,
+                Recipe.difficulty == target_recipe.difficulty,
+                Recipe.id.notin_([r.id for r in similar])
+            ).limit(n_recommendations - len(similar)).all()
+            similar.extend(additional)
+        
+        return similar[:n_recommendations]
+    
+    # MÉTODOS ORIGINALES MANTENIDOS
     def _process_ingredients_simple(self, ingredients_text):
         """Procesamiento simple de ingredientes"""
         if isinstance(ingredients_text, list):
@@ -208,7 +403,6 @@ class CulinaryExpertSystem:
     
     def _match_ingredients(self, recipes, user, ingredients, preferences):
         """Regla: Priorizar recetas que usen más ingredientes disponibles"""
-        # Esta regla ya se aplica en el ranking, simplemente devolver todas
         return recipes
     
     def _apply_time_constraints(self, recipes, user, ingredients, preferences):
@@ -233,7 +427,7 @@ class CulinaryExpertSystem:
             if total_time <= max_time:
                 filtered.append(recipe)
         
-        return filtered if filtered else recipes  # Si no hay ninguna, devolver todas
+        return filtered if filtered else recipes
     
     def _apply_difficulty_preference(self, recipes, user, ingredients, preferences):
         """Regla: Filtrar por dificultad preferida"""
@@ -249,7 +443,7 @@ class CulinaryExpertSystem:
             return recipes
         
         filtered = [recipe for recipe in recipes if recipe.difficulty == difficulty]
-        return filtered if filtered else recipes  # Si no hay ninguna, devolver todas
+        return filtered if filtered else recipes
     
     def get_ingredient_substitutions(self, recipe, available_ingredients):
         """Obtiene sustituciones para ingredientes faltantes en una receta"""

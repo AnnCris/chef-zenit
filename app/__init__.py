@@ -1,9 +1,12 @@
+# app/__init__.py - VERSIÓN CON FILTROS REGEX AÑADIDOS
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 import nltk
 import os
+import re
 
 def create_app():
     app = Flask(__name__, 
@@ -28,6 +31,96 @@ def create_app():
     def load_user(user_id):
         from app.models import User
         return User.query.get(int(user_id))
+    
+    # ✅ AGREGAR FILTROS PERSONALIZADOS PARA JINJA2
+    @app.template_filter('regex_search')
+    def regex_search_filter(text, pattern):
+        """Busca un patrón regex en el texto"""
+        try:
+            return bool(re.search(pattern, str(text)))
+        except:
+            return False
+    
+    @app.template_filter('regex_split')
+    def regex_split_filter(text, pattern):
+        """Divide texto usando un patrón regex"""
+        try:
+            return re.split(pattern, str(text))
+        except:
+            return [str(text)]
+    
+    @app.template_filter('regex_replace')
+    def regex_replace_filter(text, pattern, replacement=''):
+        """Reemplaza texto usando regex"""
+        try:
+            return re.sub(pattern, replacement, str(text))
+        except:
+            return str(text)
+    
+    @app.template_filter('regex_match')
+    def regex_match_filter(text, pattern):
+        """Verifica si el texto coincide completamente con el patrón"""
+        try:
+            return bool(re.match(pattern, str(text)))
+        except:
+            return False
+    
+    # ✅ FILTRO PARA LIMPIAR INSTRUCCIONES SIN REGEX
+    @app.template_filter('clean_instructions')
+    def clean_instructions_filter(text):
+        """Limpia y divide instrucciones sin usar regex complejo"""
+        if not text:
+            return []
+        
+        text = str(text).strip()
+        
+        # Método 1: Dividir por saltos de línea
+        if '\n' in text:
+            steps = text.split('\n')
+        # Método 2: Dividir por números seguidos de punto
+        elif '1.' in text or '2.' in text:
+            # Dividir manualmente por números
+            steps = []
+            current_step = ""
+            lines = text.split('.')
+            
+            for line in lines:
+                line = line.strip()
+                if line and any(line.startswith(str(i)) for i in range(1, 21)):
+                    if current_step:
+                        steps.append(current_step.strip())
+                    current_step = line[1:].strip() if len(line) > 1 else line
+                else:
+                    current_step += '. ' + line if current_step else line
+            
+            if current_step:
+                steps.append(current_step.strip())
+        # Método 3: Dividir por puntos
+        else:
+            steps = text.split('.')
+        
+        # Limpiar y filtrar pasos
+        cleaned_steps = []
+        for step in steps:
+            step = step.strip()
+            if step and len(step) > 15:
+                # Remover numeración al inicio
+                for i in range(1, 21):
+                    if step.startswith(f'{i}.') or step.startswith(f'{i})'):
+                        step = step[len(str(i))+1:].strip()
+                        break
+                
+                # Capitalizar primera letra
+                if step:
+                    step = step[0].upper() + step[1:] if len(step) > 1 else step.upper()
+                    
+                    # Asegurar que termine con punto
+                    if not step.endswith('.'):
+                        step += '.'
+                    
+                    cleaned_steps.append(step)
+        
+        return cleaned_steps if cleaned_steps else [text]
     
     # ✅ MEJORAR DESCARGA DE DATOS NLTK
     def setup_nltk():
