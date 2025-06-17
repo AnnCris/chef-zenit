@@ -79,7 +79,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="mb-1">Panel de Control ML</h5>
-                            <small class="text-muted">Última actualización: {{ moment().format('DD/MM/YYYY HH:mm') if moment else 'Ahora' }}</small>
+                            <small class="text-muted">Última actualización: Ahora</small>
                         </div>
                         <div class="d-flex gap-2">
                             <button onclick="refreshMetrics()" class="btn btn-outline-primary">
@@ -195,7 +195,7 @@
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <strong>Datos Insuficientes:</strong> {{ metrics.message }}
-                        <br><small>Se necesitan al menos 10 calificaciones para calcular métricas precisas.</small>
+                        <br><small>Se necesitan al menos 5 calificaciones para calcular métricas precisas.</small>
                     </div>
                     {% else %}
                     <div class="alert alert-danger">
@@ -475,18 +475,18 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <button onclick="optimizeModels()" class="btn btn-outline-primary">
-                            <i class="fas fa-optimize"></i> Optimizar Modelos
-                        </button>
-                        <button onclick="clearCache()" class="btn btn-outline-warning">
+                        <a href="{{ url_for('main.optimize_models') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-tachometer-alt"></i> Optimizar Modelos
+                        </a>
+                        <a href="{{ url_for('main.clear_cache') }}" class="btn btn-outline-warning">
                             <i class="fas fa-broom"></i> Limpiar Cache
-                        </button>
-                        <button onclick="validateData()" class="btn btn-outline-info">
+                        </a>
+                        <a href="{{ url_for('main.validate_data') }}" class="btn btn-outline-info">
                             <i class="fas fa-check-double"></i> Validar Datos
-                        </button>
-                        <button onclick="generateBenchmark()" class="btn btn-outline-success">
+                        </a>
+                        <a href="{{ url_for('main.generate_benchmark') }}" class="btn btn-outline-success">
                             <i class="fas fa-tachometer-alt"></i> Ejecutar Benchmark
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -599,33 +599,11 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'reporte_metricas_ml_{{ moment().format("YYYY-MM-DD") if moment else "2025-01-01" }}.html';
+        a.download = 'reporte_metricas_ml_' + new Date().toISOString().split('T')[0] + '.html';
         a.click();
         URL.revokeObjectURL(url);
         
         alert('Reporte exportado exitosamente');
-    }
-    
-    function optimizeModels() {
-        if (confirm('¿Estás seguro de que quieres optimizar los modelos? Esto puede tomar varios minutos.')) {
-            alert('Optimización iniciada. El proceso se ejecutará en segundo plano.');
-        }
-    }
-    
-    function clearCache() {
-        if (confirm('¿Estás seguro de que quieres limpiar el cache de los modelos?')) {
-            alert('Cache limpiado exitosamente');
-        }
-    }
-    
-    function validateData() {
-        alert('Validación de datos iniciada. Revisa los logs para ver los resultados.');
-    }
-    
-    function generateBenchmark() {
-        if (confirm('¿Quieres ejecutar un benchmark completo? Esto puede afectar el rendimiento temporalmente.')) {
-            alert('Benchmark iniciado. Los resultados estarán disponibles en 10-15 minutos.');
-        }
     }
 </script>
 {% endblock %}
